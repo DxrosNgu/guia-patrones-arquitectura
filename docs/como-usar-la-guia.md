@@ -47,7 +47,7 @@ cd services/catalog && ./mvnw quarkus:dev
 cd services/inventory
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
-uvicorn app.main:app --reload --port 8103
+uvicorn app.main:create_app --factory --reload --port 8103
 ```
 
 ```bash

@@ -199,7 +199,7 @@ Si vas a modificar código y quieres recarga en caliente, levanta solo la infrae
 ```bash
 docker compose up -d postgres kafka              # solo infraestructura
 cd services/orders && ./mvnw quarkus:dev         # Quarkus con recarga en caliente
-cd services/inventory && uvicorn app.main:app --reload
+cd services/inventory && uvicorn app.main:create_app --factory --reload
 cd frontend && npm run dev
 ```
 
@@ -273,7 +273,7 @@ Los tres ambientes se simulan **en tu máquina** con *overlays* de Compose. El o
 | Imagen | build local | misma imagen, con tag de versión | misma imagen, con tag de versión |
 | Logs | texto legible, `DEBUG` | JSON, `INFO` | JSON, `INFO`/`WARN` |
 | Puertos expuestos | todos (BD, Kafka UI, Swagger) | servicios y herramientas | solo gateway y frontend |
-| Secretos | `.env` con valores de ejemplo | `.env.dev` | archivos en `secrets/` |
+| Secretos | valores falsos por defecto | variables obligatorias que pasa quien despliega | archivos en `secrets/` |
 | Swagger y herramientas | activas | activas | desactivadas |
 | Recursos | sin límites | límites suaves | `deploy.resources.limits`, `restart: unless-stopped` |
 | Datos | semilla de ejemplo, se borra con `down -v` | semilla | sin semilla, volúmenes persistentes |
@@ -320,7 +320,7 @@ flowchart TD
 
 | # | Patrón(es) | Problema que resuelve | Caso en Mercado de Inventos | Stack | Infra extra | Estado |
 |---|---|---|---|---|---|---|
-| 01 | Externalized Configuration · Twelve-Factor | "En mi máquina funciona"; config y secretos en el código | Catálogo, inventario y web en local/dev/prod con la misma imagen | Quarkus · FastAPI · React | — | 🗓️ |
+| [01](labs/01-ambientes/) | Externalized Configuration · Twelve-Factor | "En mi máquina funciona"; config y secretos en el código | Catálogo, inventario y web en local/dev/prod con la misma imagen | Quarkus · FastAPI · React | — | ✅ |
 | 02 | Capas · Hexagonal · Clean | Lógica de negocio atada al framework y a la BD | Publicar un invento: el mismo servicio en 3 arquitecturas | Quarkus · FastAPI | — | 🗓️ |
 | 03 | DDD: Aggregate · Value Object · Domain Event · Bounded Context | Modelos anémicos e invariantes rotas | Agregado Pedido con sus reglas | Quarkus | — | 🗓️ |
 | 04 | Monolito modular | Microservicios prematuros vs. *big ball of mud* | La tienda completa en un deployable con módulos verificados | Quarkus | — | 🗓️ |
@@ -351,9 +351,11 @@ PostgreSQL está en todos los labs, así que no figura en la columna *Infra extr
 
 #### 01 · Ambientes y configuración externalizada
 
+✅ [Ir al lab](labs/01-ambientes/)
+
 - **Patrones:** Externalized Configuration · The Twelve-Factor App (factores III *Config*, V *Build, release, run* y X *Dev/prod parity*).
 - **Problema:** la URL de la base de datos está en el código, la API key está en Git y para pasar a producción hay que recompilar con otros valores. "En mi máquina funciona".
-- **Caso:** el catálogo (Quarkus), el inventario (FastAPI) y la web (React) se despliegan en local, dev y prod **con las mismas imágenes**. Entre ambientes cambian las credenciales, el nivel y el formato de log, los orígenes CORS y un *feature flag* ("mostrar inventos destacados").
+- **Caso:** el catálogo (Quarkus), el inventario (FastAPI) y la web (React) se despliegan en local, dev y prod **con las mismas imágenes**. Entre ambientes cambian las credenciales, el nivel y el formato de log, la disponibilidad de Swagger UI, los puertos expuestos y un *feature flag* ("mostrar inventos destacados").
 - **Versión ingenua:** valores hardcodeados y una imagen distinta por ambiente. La web tiene la URL del backend fija desde el build.
 - **Rómpelo:**
   - Compara `docker compose config` en los tres ambientes y explica cada diferencia.

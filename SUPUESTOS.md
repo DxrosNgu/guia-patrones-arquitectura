@@ -91,3 +91,15 @@ Todas las imágenes tienen la versión fijada (nunca `latest`).
 ## Decisiones por laboratorio
 
 *(Las voy agregando a medida que construyo cada lab.)*
+
+### Lab 01 · Ambientes
+
+- **L01-1 🟢 El lab tiene su propio Postgres**, en lugar de usar `infra/postgres.yaml`. Así puede mostrar `POSTGRES_PASSWORD_FILE` con un secreto de prod. Los demás labs usan `infra/`.
+- **L01-2 🟡 Tres formas de entregar secretos, una por ambiente:** valores falsos por defecto en local, variables obligatorias (`${VAR:?}`) en dev y archivos en `/run/secrets` en prod.
+  - **Costo:** en dev hay que anteponer `DB_PASSWORD=… SUPPLIER_API_KEY=…` al comando, incluso para el `down`.
+  - **Pregunta:** ¿te parece didáctico o prefieres que dev use archivos igual que prod?
+- **L01-3 🟢 Cada ambiente es un proyecto de Compose distinto y puede correr a la vez que los otros.** Para eso, dev y prod usan otros puertos: web en 3100 y 3200, y servicios de dev en 8111 y 8113. Es una excepción a la convención de puertos, solo en este lab.
+- **L01-4 🟢 Sin CORS.** El README general decía que entre ambientes cambiaban "los orígenes CORS". Al final, nginx hace de reverse proxy (`/api/catalog` y `/api/inventory`) y el navegador habla con un solo origen, así que no hace falta CORS. En su lugar varían Swagger y los puertos expuestos. Ya ajusté el README general.
+- **L01-5 🟢 `LOG_LEVEL` solo afecta a los loggers de la app** (`com.mercadoinventos` en Quarkus, `inventory` en Python). Si se aplicara a todo, `DEBUG` inundaría la salida con logs de Hibernate y Vert.x.
+- **L01-6 🟢 Los contenedores corren sin root (uid 1001).** Los archivos de `secrets/` tienen que ser legibles por ese usuario. Con los permisos normales (644) funciona.
+- **L01-7 🟢 Para los tests de Python uso `httpx2`.** Es lo que pide Starlette ahora para su `TestClient`; con `httpx` muestra una advertencia de deprecación.

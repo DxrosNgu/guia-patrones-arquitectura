@@ -1,0 +1,61 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Ambiente PROD (simulado en tu máquina).
+#
+#   docker compose -f compose.yaml -f compose.prod.yaml --env-file .env.prod up -d
+#
+# - Proyecto distinto (`name`): no comparte datos con local ni con dev.
+# - NO se compila: usa la imagen ya probada en local y dev.
+# - Secretos como ARCHIVOS montados en /run/secrets (nunca en variables
+#   visibles con `docker inspect`). Créalos desde secrets/*.example.
+# - Solo el frontend expone un puerto. La BD y los servicios quedan
+#   en la red interna.
+# - Límites de recursos y reinicio automático.
+# ─────────────────────────────────────────────────────────────────────────
+name: lab01-ambientes-prod
+
+x-prod: &prod
+  restart: unless-stopped
+  deploy:
+    resources:
+      limits:
+        cpus: "1.0"
+        memory: 512M
+
+services:
+  postgres:
+    <<: *prod
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+
+  catalog:
+    <<: *prod
+    build: !reset null
+    pull_policy: never
+    environment:
+      QUARKUS_DATASOURCE_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+
+  inventory:
+    <<: *prod
+    build: !reset null
+    pull_policy: never
+    environment:
+      SUPPLIER_API_KEY_FILE: /run/secrets/supplier_api_key
+    secrets:
+      - supplier_api_key
+
+  frontend:
+    <<: *prod
+    build: !reset null
+    pull_policy: never
+    ports:
+      - "3200:80"
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  supplier_api_key:
+    file: ./secrets/supplier_api_key.txt

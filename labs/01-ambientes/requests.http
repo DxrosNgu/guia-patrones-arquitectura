@@ -1,0 +1,37 @@
+### Lab 01 · peticiones de ejemplo (ambiente local)
+### Ábrelo con la extensión "REST Client" de VS Code o directamente en IntelliJ.
+
+@frontend = http://localhost:3000
+@catalog = http://localhost:8101
+@inventory = http://localhost:8103
+
+### Configuración con la que arrancó el catálogo
+GET {{catalog}}/api/info
+
+### Configuración con la que arrancó el inventario (la clave aparece enmascarada)
+GET {{inventory}}/api/info
+
+### Inventos (desde la BD de Postgres)
+GET {{catalog}}/api/inventions
+
+### Stock
+GET {{inventory}}/api/stock
+
+### Lo mismo, pero a través del frontend (nginx hace de proxy)
+GET {{frontend}}/api/catalog/info
+
+### El config.js que nginx generó al arrancar
+GET {{frontend}}/config.js
+
+### Health checks: readiness de Quarkus y health de FastAPI
+GET {{catalog}}/q/health/ready
+
+###
+GET {{inventory}}/health
+
+### ── Comparar ambientes ─────────────────────────────────────
+### dev (puerto 3100) y prod (puerto 3200), vía el frontend
+GET http://localhost:3100/api/catalog/info
+
+###
+GET http://localhost:3200/api/catalog/info

@@ -1,0 +1,41 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Ambiente DEV (un ambiente compartido por el equipo, simulado en tu máquina).
+#
+#   DB_PASSWORD=dev-pass SUPPLIER_API_KEY=sk-dev-1234 \
+#     docker compose -f compose.yaml -f compose.dev.yaml --env-file .env.dev up -d
+#
+# - Proyecto distinto (`name`): contenedores y volúmenes propios, así que
+#   puede convivir con local.
+# - NO se compila: usa la imagen que construiste en local.
+# - Los secretos llegan como variables del entorno que lanza el despliegue
+#   (en la vida real, el pipeline de CI/CD). `:?` hace que Compose se niegue a
+#   arrancar si faltan.
+# ─────────────────────────────────────────────────────────────────────────
+name: lab01-ambientes-dev
+
+services:
+  postgres:
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD (en un dev real lo inyecta el pipeline)}
+
+  catalog:
+    build: !reset null
+    pull_policy: never
+    environment:
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD}
+    ports:
+      - "8111:8080"
+
+  inventory:
+    build: !reset null
+    pull_policy: never
+    environment:
+      SUPPLIER_API_KEY: ${SUPPLIER_API_KEY:?Define SUPPLIER_API_KEY (en un dev real lo inyecta el pipeline)}
+    ports:
+      - "8113:8000"
+
+  frontend:
+    build: !reset null
+    pull_policy: never
+    ports:
+      - "3100:80"

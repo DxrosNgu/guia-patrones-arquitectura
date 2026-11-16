@@ -1,0 +1,26 @@
+# Plantilla: al arrancar, la imagen oficial de nginx reemplaza ${CATALOG_URL} e
+# ${INVENTORY_URL} con las variables de entorno y deja el resultado en
+# /etc/nginx/conf.d/default.conf. Las URLs internas cambian por ambiente;
+# la imagen no.
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+
+    # Reverse proxy: el navegador solo habla con este origen.
+    location /api/catalog/ {
+        proxy_pass ${CATALOG_URL}/api/;
+    }
+    location /api/inventory/ {
+        proxy_pass ${INVENTORY_URL}/api/;
+    }
+
+    # config.js cambia en cada arranque: que el navegador no lo guarde en caché.
+    location = /config.js {
+        add_header Cache-Control "no-store";
+    }
+
+    # SPA: cualquier otra ruta devuelve index.html.
+    location / {
+        try_files $uri /index.html;
+    }
+}
