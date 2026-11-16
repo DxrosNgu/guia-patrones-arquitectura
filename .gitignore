@@ -2,6 +2,8 @@
 # .env es tu copia local de .env.example (puede tener valores personales).
 # .env.dev y .env.prod SÍ se versionan: solo contienen configuración no secreta.
 .env
+# Secretos en archivos .env aparte (por ejemplo .env.dev.secrets): nunca se suben.
+*.secrets
 # Los secretos de prod se crean a partir de los *.example y nunca se suben.
 **/secrets/*
 !**/secrets/*.example
