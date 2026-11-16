@@ -7,8 +7,10 @@
 # - NO se compila: usa la imagen ya probada en local y dev.
 # - Secretos como ARCHIVOS montados en /run/secrets (nunca en variables
 #   visibles con `docker inspect`). Créalos desde secrets/*.example.
-# - Solo el frontend expone un puerto. La BD y los servicios quedan
-#   en la red interna.
+# - Exponen puertos el frontend (3200) y la API pública del catálogo (8201),
+#   esta última con CORS: solo el origen del frontend puede leerla desde
+#   un navegador. La BD y el inventario quedan en la red interna.
+# - El "otro sitio" (3299) existe solo para demostrar que CORS lo bloquea.
 # - Límites de recursos y reinicio automático.
 # ─────────────────────────────────────────────────────────────────────────
 name: lab01-ambientes-prod
@@ -33,8 +35,14 @@ services:
     <<: *prod
     build: !reset null
     pull_policy: never
+    # API pública: otro origen distinto del frontend (como api.mercado.com vs www.mercado.com).
+    ports:
+      - "8201:8080"
     environment:
       QUARKUS_DATASOURCE_PASSWORD_FILE: /run/secrets/db_password
+      # CORS: qué orígenes pueden leer esta API desde un navegador. Una lista explícita, nunca "*".
+      QUARKUS_HTTP_CORS_ENABLED: "true"
+      QUARKUS_HTTP_CORS_ORIGINS: ${CORS_ORIGINS:?Falta CORS_ORIGINS (ver .env.prod)}
     secrets:
       - db_password
 
@@ -53,6 +61,16 @@ services:
     pull_policy: never
     ports:
       - "3200:80"
+    environment:
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-}
+
+  # Solo para la demostración de CORS: una página de OTRO origen que intenta leer la API.
+  other-site:
+    image: nginx:1.31.7-alpine
+    volumes:
+      - ./cors-demo:/usr/share/nginx/html:ro
+    ports:
+      - "3299:80"
 
 secrets:
   db_password:

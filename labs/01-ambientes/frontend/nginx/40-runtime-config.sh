@@ -7,7 +7,8 @@ set -eu
 cat > /usr/share/nginx/html/config.js <<EOF
 window.__APP_CONFIG__ = {
   environment: "${APP_ENV:-desconocido}",
-  appTitle: "${APP_TITLE:-Mercado de Inventos}"
+  appTitle: "${APP_TITLE:-Mercado de Inventos}",
+  publicApiUrl: "${PUBLIC_API_URL:-}"
 };
 EOF
 

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Otro sitio</title>
+  <style>
+    :root { --bg: #fff8e6; --text: #2b2112; --border: #e8d7a8; color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #1f1a10; --text: #f3e9d2; --border: #4a3d1f; } }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); max-width: 720px; margin: 0 auto; padding: 1rem; }
+    pre { white-space: pre-wrap; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>🕵️ Otro sitio (http://localhost:3299)</h1>
+  <p>
+    Esta página NO es Mercado de Inventos. Intenta leer la API pública del catálogo
+    (<code>http://localhost:8201/api/info</code>) desde el navegador.
+  </p>
+  <p>
+    La API solo autoriza al origen <code>http://localhost:3200</code>, así que el navegador
+    <b>bloquea la lectura</b>. Abre la consola de DevTools para ver el motivo.
+  </p>
+  <pre id="result">Llamando…</pre>
+  <script>
+    fetch('http://localhost:8201/api/info')
+      .then((r) => r.json())
+      .then((info) => { document.getElementById('result').textContent = '✅ Leí la respuesta: ' + JSON.stringify(info) })
+      .catch((e) => { document.getElementById('result').textContent = '⛔ ' + e.message + '\n\nEl navegador bloqueó la lectura por CORS.' })
+  </script>
+</body>
+</html>

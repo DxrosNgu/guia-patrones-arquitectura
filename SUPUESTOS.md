@@ -34,15 +34,13 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 
 ### Lab 01 · Ambientes
 
-- **L01-1 🟢 El lab tiene su propio Postgres**, en lugar de usar `infra/postgres.yaml`. Así puede mostrar `POSTGRES_PASSWORD_FILE` con un secreto de prod. Los demás labs usan `infra/`.
-- **L01-2 🟡 Tres formas de entregar secretos, una por ambiente:** valores falsos por defecto en local, variables obligatorias (`${VAR:?}`) en dev y archivos en `/run/secrets` en prod.
-  - **Costo:** en dev hay que anteponer `DB_PASSWORD=… SUPPLIER_API_KEY=…` al comando, incluso para el `down`.
-  - **Pregunta:** ¿te parece didáctico o prefieres que dev use archivos igual que prod?
-- **L01-3 🟢 Cada ambiente es un proyecto de Compose distinto y puede correr a la vez que los otros.** Para eso, dev y prod usan otros puertos: web en 3100 y 3200, y servicios de dev en 8111 y 8113. Es una excepción a la convención de puertos, solo en este lab.
-- **L01-4 🟢 Sin CORS.** El README general decía que entre ambientes cambiaban "los orígenes CORS". Al final, nginx hace de reverse proxy (`/api/catalog` y `/api/inventory`) y el navegador habla con un solo origen, así que no hace falta CORS. En su lugar varían Swagger y los puertos expuestos. Ya ajusté el README general.
-- **L01-5 🟢 `LOG_LEVEL` solo afecta a los loggers de la app** (`com.mercadoinventos` en Quarkus, `inventory` en Python). Si se aplicara a todo, `DEBUG` inundaría la salida con logs de Hibernate y Vert.x.
-- **L01-6 🟢 Los contenedores corren sin root (uid 1001).** Los archivos de `secrets/` tienen que ser legibles por ese usuario. Con los permisos normales (644) funciona.
-- **L01-7 🟢 Para los tests de Python uso `httpx2`.** Es lo que pide Starlette ahora para su `TestClient`; con `httpx` muestra una advertencia de deprecación.
+- **L01-1 ✅ El lab tiene su propio Postgres** para mostrar `POSTGRES_PASSWORD_FILE`. **Respuesta:** OK, y los valores reales van al repo privado de credenciales. **Hecho:** el repo de credenciales tiene `secrets/*.txt` y los secretos de dev; este repo solo guarda los `*.example`.
+- **L01-2 ✅ Tres formas de entregar secretos, una por ambiente.** **Respuesta:** te gusta; pediste el criterio. **Hecho:** el README del lab explica el porqué en "¿Por qué tres formas distintas y no una?" (quién entrega el secreto y qué riesgo hay en cada ambiente).
+- **L01-3 ✅ Cada ambiente es un proyecto de Compose con puertos propios.** **Respuesta:** te gusta, porque permite probar ambientes cruzando puertos. Sin cambios.
+- **L01-4 ✅ CORS.** **Respuesta:** hacer la demostración en prod. **Hecho:** en prod el catálogo se publica como API pública en otro origen (`:8201`) con `QUARKUS_HTTP_CORS_ORIGINS=http://localhost:3200`. La web tiene un botón que la llama, y un "otro sitio" en `:3299` muestra cómo el navegador lo bloquea. Hay tests de CORS en el catálogo, chequeos en `smoke.sh prod` y capturas en el README. Quarkus responde `403 CORS Rejected` a los orígenes no autorizados.
+- **L01-5 ✅ Nivel de log.** **Respuesta:** que afecte a todo; DEBUG solo en dev y el resto en INFO, por seguridad. **Hecho:** `quarkus.log.level` (raíz) en Quarkus y logger raíz más uvicorn en Python. Local y prod en `INFO`, dev en `DEBUG`. `smoke.sh` verifica el nivel en cada ambiente.
+- **L01-6 ✅ Contenedores sin root (uid 1001).** **Respuesta:** OK, considerando el repo de credenciales. Los archivos que se copian de ahí funcionan con permisos 644.
+- **L01-7 ✅ `httpx2` para los tests de Python.** **Respuesta:** usar httpx2. Ya está así en todos los servicios.
 
 ### Lab 02 · Capas vs. Hexagonal vs. Clean
 

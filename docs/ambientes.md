@@ -60,7 +60,8 @@ docker compose -f compose.yaml -f compose.prod.yaml --env-file .env.prod config
 
 | Aspecto | local | dev | prod |
 |---|---|---|---|
-| Logs | `DEBUG`, texto | `INFO`, JSON | `INFO`, JSON |
+| Logs | `INFO`, texto | **`DEBUG`**, JSON (único ambiente con DEBUG: puede mostrar datos sensibles) | `INFO`, JSON |
+| CORS | no aplica (un solo origen detrás del proxy) | no aplica | lista explícita de orígenes para las API públicas (lab 01) |
 | Puertos | todos | servicios y herramientas | solo el punto de entrada |
 | Swagger UI | activo | activo | desactivado |
 | Secretos | falsos, por defecto | variables obligatorias | archivos |
