@@ -1,0 +1,45 @@
+### Lab 05 · Microservicios y Database per Service
+@orders = http://localhost:8102
+@inventory = http://localhost:8103
+@payments = http://localhost:8104
+@report = http://localhost:8109
+
+### Crear un pedido (stock OK, pago < 500 → CONFIRMED)
+POST {{orders}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "ana",
+  "currency": "PEN",
+  "items": [
+    { "sku": "INV-001", "quantity": 2, "unitPrice": 49.90 },
+    { "sku": "INV-003", "quantity": 1, "unitPrice": 189.00 }
+  ]
+}
+
+### Pedido sin stock (INV-002 tiene 0) → REJECTED
+POST {{orders}}/api/orders
+Content-Type: application/json
+
+{ "customerId": "ana", "currency": "PEN", "items": [{ "sku": "INV-002", "quantity": 1, "unitPrice": 35.00 }] }
+
+### Pedido que supera el límite de la tarjeta (725 > 500) → REJECTED... pero mira el stock después
+POST {{orders}}/api/orders
+Content-Type: application/json
+
+{ "customerId": "ana", "currency": "PEN", "items": [{ "sku": "INV-004", "quantity": 10, "unitPrice": 72.50 }] }
+
+### Stock de cada invento (inventory)
+GET {{inventory}}/api/stock
+
+### Pagos de todos los pedidos (payments)
+GET {{payments}}/api/payments
+
+### Pedidos (orders)
+GET {{orders}}/api/orders
+
+### Reporte de ventas armado por API (correcto)
+GET {{report}}/api/report
+
+### Reporte de ventas armado con un JOIN sobre la BD compartida (versión ingenua)
+GET http://localhost:9109/api/report

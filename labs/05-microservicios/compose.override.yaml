@@ -1,0 +1,21 @@
+# Ambiente LOCAL (Compose lo carga solo): todos los puertos expuestos.
+#   correcta: 8102 orders · 8103 inventory · 8104 payments · 8109 report
+#   ingenua:  9102 orders · 9103 inventory · 9104 payments · 9109 report
+services:
+  orders:
+    ports: ["8102:8080"]
+  inventory:
+    ports: ["8103:8000"]
+  payments:
+    ports: ["8104:8080"]
+  report:
+    ports: ["8109:8000"]
+
+  orders-naive:
+    ports: ["9102:8080"]
+  inventory-naive:
+    ports: ["9103:8000"]
+  payments-naive:
+    ports: ["9104:8080"]
+  report-naive:
+    ports: ["9109:8000"]

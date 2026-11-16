@@ -1,0 +1,84 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Ambiente PROD: Database per Service "de verdad".
+#
+#   PROD_DB_PASSWORD=algo-largo docker compose -f compose.yaml -f compose.prod.yaml up -d
+#
+# En local ahorramos RAM con UN contenedor Postgres y una base por servicio.
+# En prod, cada servicio tiene su PROPIA instancia: otra máquina, otros
+# backups, otra versión de Postgres si hiciera falta. Ahí el JOIN de la
+# versión ingenua ni siquiera es posible.
+#
+# ⚠️ Simplificación: las tres instancias comparten la variable PROD_DB_PASSWORD.
+#    En la vida real cada una tendría su credencial en un gestor de secretos (lab 01).
+# ─────────────────────────────────────────────────────────────────────────
+name: lab05-microservicios-prod
+
+x-db: &db
+  image: postgres:17.12-alpine
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+    interval: 5s
+    timeout: 3s
+    retries: 20
+
+services:
+  # El Postgres compartido de infra/ no se usa en prod.
+  postgres:
+    profiles: [no-se-usa-en-prod]
+
+  db-orders:
+    <<: *db
+    environment: {POSTGRES_DB: orders, POSTGRES_USER: orders, POSTGRES_PASSWORD: "${PROD_DB_PASSWORD:?Define PROD_DB_PASSWORD}"}
+    volumes: [db-orders:/var/lib/postgresql/data]
+  db-inventory:
+    <<: *db
+    environment: {POSTGRES_DB: inventory, POSTGRES_USER: inventory, POSTGRES_PASSWORD: "${PROD_DB_PASSWORD:?Define PROD_DB_PASSWORD}"}
+    volumes: [db-inventory:/var/lib/postgresql/data]
+  db-payments:
+    <<: *db
+    environment: {POSTGRES_DB: payments, POSTGRES_USER: payments, POSTGRES_PASSWORD: "${PROD_DB_PASSWORD:?Define PROD_DB_PASSWORD}"}
+    volumes: [db-payments:/var/lib/postgresql/data]
+
+  orders:
+    build: !reset null
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://db-orders:5432/orders
+      QUARKUS_DATASOURCE_PASSWORD: ${PROD_DB_PASSWORD:?Define PROD_DB_PASSWORD}
+    depends_on: !override
+      db-orders: {condition: service_healthy}
+      inventory: {condition: service_healthy}
+      payments: {condition: service_healthy}
+    ports: ["8102:8080"]
+
+  inventory:
+    build: !reset null
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://inventory:${PROD_DB_PASSWORD:?Define PROD_DB_PASSWORD}@db-inventory:5432/inventory
+    depends_on: !override
+      db-inventory: {condition: service_healthy}
+
+  payments:
+    build: !reset null
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://db-payments:5432/payments
+      QUARKUS_DATASOURCE_PASSWORD: ${PROD_DB_PASSWORD:?Define PROD_DB_PASSWORD}
+    depends_on: !override
+      db-payments: {condition: service_healthy}
+
+  report:
+    build: !reset null
+    pull_policy: never
+    restart: unless-stopped
+    ports: ["8109:8000"]
+
+volumes:
+  db-orders:
+  db-inventory:
+  db-payments:

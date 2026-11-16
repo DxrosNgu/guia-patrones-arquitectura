@@ -103,3 +103,12 @@ Todas las imágenes tienen la versión fijada (nunca `latest`).
 - **L01-5 🟢 `LOG_LEVEL` solo afecta a los loggers de la app** (`com.mercadoinventos` en Quarkus, `inventory` en Python). Si se aplicara a todo, `DEBUG` inundaría la salida con logs de Hibernate y Vert.x.
 - **L01-6 🟢 Los contenedores corren sin root (uid 1001).** Los archivos de `secrets/` tienen que ser legibles por ese usuario. Con los permisos normales (644) funciona.
 - **L01-7 🟢 Para los tests de Python uso `httpx2`.** Es lo que pide Starlette ahora para su `TestClient`; con `httpx` muestra una advertencia de deprecación.
+
+### Lab 05 · Microservicios
+
+- **L05-1 🟡 Sin `compose.dev.yaml` desde este lab.** Solo incluyo los overlays en los que el patrón cambia de verdad entre ambientes. Aquí, prod muestra una instancia de base por servicio. Dev sería igual a local, y el lab 01 ya enseña esa diferencia.
+  **Pregunta:** ¿quieres los tres overlays en todos los labs, aunque se repitan?
+- **L05-2 🟢 El pedido trae los precios en la petición** para no necesitar el catálogo. Está marcado con ⚠️ en el README.
+- **L05-3 🟢 Agregué un servicio `report` (equipo de BI)** que no estaba en el plan. Sirve para mostrar el acoplamiento por base compartida (JOIN directo) contra la composición por API.
+- **L05-4 🟢 La "versión 2" de inventario se simula con `INVENTORY_V2=true`:** renombra una columna interna y mantiene el contrato de la API.
+- **L05-5 🟢 Incluí dos lecciones que aparecieron mientras construía el lab:** el rollback imposible después de una migración destructiva (expand/contract) y un pedido mal enrutado por reutilización de IP más la caché DNS.
