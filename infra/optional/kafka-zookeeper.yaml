@@ -1,0 +1,54 @@
+# ─────────────────────────────────────────────────────────────────────────
+# OPCIONAL · Kafka en modo ZooKeeper (el modo "clásico").
+#
+# ⚠️ Kafka 4.0 eliminó ZooKeeper por completo: este archivo usa Kafka 3.9,
+#    la última versión que lo soporta. Úsalo para APRENDER cómo era, o para
+#    entender un clúster legado. Los labs de la guía usan KRaft (infra/kafka.yaml).
+#    Explicación completa: docs/kafka-kraft-vs-zookeeper.md
+#
+# Expone los mismos nombres que infra/kafka.yaml (kafka:9092, localhost:9092),
+# así que un lab puede cambiar de uno a otro reemplazando el include:
+#   include:
+#     - ../../infra/optional/kafka-zookeeper.yaml
+# ─────────────────────────────────────────────────────────────────────────
+services:
+  zookeeper:
+    image: zookeeper:3.9.7
+    environment:
+      ZOO_4LW_COMMANDS_WHITELIST: ruok,stat,mntr
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc -w 2 localhost 2181 | grep imok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  kafka:
+    image: apache/kafka:3.9.2
+    # El arranque estándar de la imagen formatea el almacenamiento para KRaft y falla con
+    # ZooKeeper. Por eso se arranca el broker directamente con un server.properties clásico.
+    entrypoint: ["/opt/kafka/bin/kafka-server-start.sh"]
+    command: ["/etc/kafka-zk/server.properties"]
+    volumes:
+      - ./kafka-zookeeper/server.properties:/etc/kafka-zk/server.properties:ro
+    ports:
+      - "9092:29092"
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 15s
+
+  kafka-ui:
+    image: kafbat/kafka-ui:v1.4.2
+    environment:
+      KAFKA_CLUSTERS_0_NAME: mercado-inventos-zk
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    ports:
+      - "${KAFKA_UI_PORT:-8090}:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy

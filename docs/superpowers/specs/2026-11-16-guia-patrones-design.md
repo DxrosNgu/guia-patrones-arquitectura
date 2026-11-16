@@ -21,9 +21,8 @@
 5. [Ruta de aprendizaje](#5-ruta-de-aprendizaje)
 6. [Catálogo de patrones y casos](#6-catálogo-de-patrones-y-casos)
 7. [Estilos de arquitectura: qué cubre la guía](#7-estilos-de-arquitectura-qué-cubre-la-guía)
-8. [Nota del autor: relación con el ecosistema inventions](#8-nota-del-autor-relación-con-el-ecosistema-inventions)
-9. [Decisiones y pendientes](#9-decisiones-y-pendientes)
-10. [Referencias](#10-referencias)
+8. [Decisiones y pendientes](#8-decisiones-y-pendientes)
+9. [Referencias](#9-referencias)
 
 ---
 
@@ -695,23 +694,7 @@ Los patrones anteriores se aplican dentro de **estilos** de arquitectura más am
 
 ---
 
-## 8. Nota del autor: relación con el ecosistema inventions
-
-Algunos de estos patrones ya aparecen, en distinto grado, en mis servicios del ecosistema *inventions*. La guía me sirve para entenderlos a fondo y llevarlos más lejos.
-
-| Repositorio | Lo que ya implementa | Lab relacionado |
-|---|---|---|
-| `inventions-payments` | CQRS nivel 1 (comando y consulta separados, proyección actualizada por evento dentro del proceso), idempotencia con `commandId`, bloqueo optimista y reversa manual | 12 · 14 · 18 |
-| `api-gateway` | API Gateway que valida el JWT y propaga la identidad (`X-User-Id`) | 07 |
-| `eureka-server` | Service Registry (Eureka) | 08 |
-| `config-server` + `inventions-config` | Configuración externalizada con perfiles local, dev y prod | 01 |
-
-> [!IMPORTANT]
-> `inventions-payments` **todavía no implementa Saga**. La transferencia ocurre en una sola transacción local, dentro de un solo servicio. La reversa (`POST /transactions/{id}/reverse`) es una transacción compensatoria, pero se ejecuta a mano. Después de los labs 15 a 17, un buen ejercicio es llevar una saga real a ese servicio.
-
----
-
-## 9. Decisiones y pendientes
+## 8. Decisiones y pendientes
 
 **Decididas:**
 
@@ -738,7 +721,7 @@ Algunos de estos patrones ya aparecen, en distinto grado, en mis servicios del e
 
 ---
 
-## 10. Referencias
+## 9. Referencias
 
 - Chris Richardson: *Microservices Patterns* (Manning) y [microservices.io](https://microservices.io)
 - Sam Newman: *Building Microservices* (2.ª ed.) y *Monolith to Microservices*
