@@ -71,12 +71,19 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 
 ### Lab 05 · Microservicios
 
-- **L05-1 🟡 Sin `compose.dev.yaml` desde este lab.** Solo incluyo los overlays en los que el patrón cambia de verdad entre ambientes. Aquí, prod muestra una instancia de base por servicio. Dev sería igual a local, y el lab 01 ya enseña esa diferencia.
-  **Pregunta:** ¿quieres los tres overlays en todos los labs, aunque se repitan?
-- **L05-2 🟢 El pedido trae los precios en la petición** para no necesitar el catálogo. Está marcado con ⚠️ en el README.
-- **L05-3 🟢 Agregué un servicio `report` (equipo de BI)** que no estaba en el plan. Sirve para mostrar el acoplamiento por base compartida (JOIN directo) contra la composición por API.
-- **L05-4 🟢 La "versión 2" de inventario se simula con `INVENTORY_V2=true`:** renombra una columna interna y mantiene el contrato de la API.
-- **L05-5 🟢 Incluí dos lecciones que aparecieron mientras construía el lab:** el rollback imposible después de una migración destructiva (expand/contract) y un pedido mal enrutado por reutilización de IP más la caché DNS.
+- **L05-1 🟡 Sin `compose.dev.yaml` desde este lab.** **Preguntaste qué es un overlay.** Es un archivo de Compose que se **superpone** al `compose.yaml` base y solo cambia lo que difiere en un ambiente: `docker compose -f compose.yaml -f compose.prod.yaml up` combina los dos, y gana el último. En el lab 01 son `compose.override.yaml` (local, se carga solo), `compose.dev.yaml` y `compose.prod.yaml`. Dónde verlo: [`docs/ambientes.md`](docs/ambientes.md), el [README del lab 01](labs/01-ambientes/README.md#el-patrón) y el glosario.
+  **La pregunta sigue abierta:** ¿quieres los tres overlays (local, dev, prod) en **todos** los labs aunque dev sea casi igual a local, o solo donde el patrón cambia entre ambientes (como ahora)?
+- **L05-2 ✅ El pedido trae los precios en la petición.** **Pediste la explicación.** En la vida real, pedidos **no puede confiar** en el precio que manda el cliente: cualquiera podría comprar a 0,01 editando la petición. Debería pedírselo al catálogo (por API o con una copia local del precio actualizada por eventos). Este lab no tiene catálogo para no sumar un cuarto servicio que no aporta a Database per Service. Por eso está marcado con ⚠️: es una **simplificación consciente**, y el ⚠️ avisa que no se debe copiar así a un sistema real.
+- **L05-3 ✅ El servicio `report` (equipo de BI).** **Pediste la explicación.** Representa a otro equipo que necesita datos de pedidos **y** de inventario juntos, por ejemplo "pedidos con el stock actual de cada producto".
+  - **En la versión ingenua** hace un `JOIN` directo entre tablas de dos equipos. Es rápido de escribir, pero cuando inventario renombra una columna interna, el reporte se rompe sin que nadie toque su código (experimento 2).
+  - **En la versión correcta** llama a las API de pedidos e inventario y une los datos en memoria. Es más lento y más trabajo, pero sobrevive a los cambios internos de cada equipo (experimento 3).
+
+  Es el caso que justifica los labs 09 (API Composition) y 14 (CQRS).
+- **L05-4 ✅ La "versión 2" de inventario se simula con `INVENTORY_V2=true`.** OK.
+- **L05-5 ✅ Las lecciones como casos de despliegue.** **Hecho:** el README tiene una sección nueva, "Casos que pueden pasar durante un despliegue", con síntoma, causa, cómo reproducirlo y prevención:
+  1. El rollback imposible, con la tabla de *expand/contract*.
+  2. La petición que llega al servicio equivocado (IP reutilizada y caché de DNS).
+  3. El healthcheck de Postgres que decía "listo" antes de tiempo, que apareció al reverificar los labs.
 
 ### Lab 06 · Sync vs. async
 

@@ -131,11 +131,46 @@ Para limpiar: `docker compose --profile naive down -v`.
 
 6. **Volver atrás no siempre es posible.** Después de la v2, intenta "hacer rollback" a la v1 (`INVENTORY_V2=false docker compose up -d inventory`). Inventario no arranca: el código v1 busca una columna que la migración v2 ya renombró. Los cambios de esquema destructivos impiden el rollback. Por eso en la vida real se hacen en dos pasos (*expand/contract*): primero se agrega la columna nueva, y solo cuando nadie usa la vieja, se borra.
 
-### 📎 Lo que nos pasó construyendo este lab
+## Casos que pueden pasar durante un despliegue
 
-Durante el experimento 2 recreamos `inventory` e `inventory-naive` a la vez, e inmediatamente hicimos un pedido en `orders`. **La reserva terminó en la base `shop`.** Docker le había dado al nuevo `inventory-naive` la IP que tenía el viejo `inventory`, y `orders` todavía tenía esa IP en su caché DNS (la JVM la guarda unos segundos).
+Separar en servicios multiplica los despliegues: cada equipo despliega cuando quiere. Estos tres casos aparecieron mientras se construía la guía y le pasan a equipos reales. Cada uno tiene síntoma, causa, cómo reproducirlo aquí y cómo prevenirlo.
 
-En producción pasa algo parecido: tras un redespliegue, un cliente con DNS o conexiones viejas habla con el destino equivocado. Por eso las plataformas usan service discovery (lab 08), *health checks* y *connection draining*. Si quieres reproducirlo, espera unos 30 segundos entre recrear servicios y hacer pedidos, o recrea uno a la vez.
+### Caso 1 · El rollback que no se puede hacer
+
+- **Síntoma:** despliegas una versión nueva, algo sale mal, vuelves a la anterior... y la anterior **no arranca** o falla en cada petición.
+- **Causa:** la versión nueva aplicó una migración **destructiva** (renombrar o borrar una columna). El código viejo busca una columna que ya no existe. Las migraciones van hacia adelante; el código se puede revertir, pero el esquema no.
+- **Reprodúcelo:** experimento 6 (`INVENTORY_V2=true` y luego `INVENTORY_V2=false`).
+- **Prevención: *expand/contract*** (también llamado *parallel change*). Un cambio destructivo se reparte en varios despliegues, y cada uno se puede revertir:
+
+  | Despliegue | Esquema | Código | ¿Rollback seguro? |
+  |---|---|---|---|
+  | 1 · *expand* | Agrega `units_available` (la vieja sigue) | Escribe en **las dos** columnas y lee la vieja | Sí: la v0 sigue funcionando |
+  | 2 · migrar | Copia los datos viejos a la columna nueva | Lee la **nueva** | Sí: la vieja sigue al día |
+  | 3 · *contract* | Borra `available` | Ya nadie la usa | Sí: ningún código la necesita |
+
+### Caso 2 · La petición que llega al servicio equivocado
+
+- **Síntoma:** justo después de redesplegar, algunas peticiones llegan a **otro** servicio o a una instancia que ya no existe. Mientras se construía este lab, una reserva de pedidos terminó en la base `shop` (la del inventario **ingenuo**), no en la de `inventory`.
+- **Causa:** se recrearon `inventory` e `inventory-naive` a la vez. Docker le dio al nuevo `inventory-naive` la **IP que tenía el viejo `inventory`**, y `orders` todavía tenía guardada esa IP en su caché de DNS (la JVM y Vert.x guardan la resolución unos segundos). Para `orders`, "inventory" seguía siendo esa IP.
+- **Reprodúcelo:** recrea los dos a la vez y haz un pedido de inmediato:
+  ```bash
+  INVENTORY_V2=true docker compose --profile naive up -d --force-recreate inventory inventory-naive
+  curl -s -X POST localhost:8102/api/orders -H 'Content-Type: application/json' \
+    -d '{"customerId":"ana","currency":"PEN","items":[{"sku":"INV-001","quantity":1,"unitPrice":10}]}'
+  ```
+  No siempre pasa: depende de qué IP asigne Docker. Si esperas unos 30 segundos entre recrear y pedir, no pasa.
+- **Prevención:**
+  - **No depender de IPs.** Service discovery con health checks (lab 08), o un DNS con TTL corto y el TTL de la JVM ajustado (`networkaddress.cache.ttl`).
+  - **IPs virtuales estables.** Un `Service` de Kubernetes tiene una IP que no cambia aunque los pods cambien.
+  - **Connection draining:** antes de apagar una instancia, se la saca del balanceador y se espera a que terminen sus peticiones.
+  - **Verificar a quién le hablas:** un servicio puede rechazar peticiones que no son para él (por ejemplo, con el nombre del servicio en un header o en el token).
+
+### Caso 3 · El healthcheck que dice "listo" antes de tiempo
+
+- **Síntoma:** al levantar el sistema, un servicio que depende de Postgres **muere al arrancar** con "connection refused", aunque Compose esperó a que Postgres estuviera *healthy*. Pasa de vez en cuando, sobre todo en máquinas cargadas.
+- **Causa:** el healthcheck usaba `pg_isready` **por socket Unix**. Mientras corren los scripts de init (crear bases y usuarios), la imagen de Postgres levanta un servidor **temporal que solo escucha en el socket**, no por TCP. El healthcheck decía "listo", el servicio intentaba conectarse por TCP y fallaba.
+- **Reprodúcelo:** está explicado, con la prueba que lo confirmó, en [`infra/README.md`](../../infra/README.md#postgres-una-base-por-servicio).
+- **Prevención:** un healthcheck tiene que comprobar el servicio **como lo usan sus clientes**. Aquí: `pg_isready -h 127.0.0.1` (por TCP). En general: *readiness* que verifique las dependencias reales (lab 10) y clientes que **reintentan** la conexión al arrancar en lugar de morir.
 
 ## ¿Qué cambia en dev y prod?
 
