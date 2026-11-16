@@ -142,3 +142,12 @@ Todas las imágenes tienen la versión fijada (nunca `latest`).
   **Pregunta:** ¿prefieres un usuario de replicación dedicado, aunque complique `infra/postgres/init`?
 - **L15-3 🟢 Debezium 3.6.3.Final desde `quay.io`** (gracias al permiso de red que me diste), con `snapshot.mode=no_data`. Así, al activar CDC después de usar polling, no se republican los eventos viejos.
 - **L15-4 🟢 `wal_level=logical` va en `compose.override.yaml`.** Un archivo que incluye otro no puede redefinir sus servicios, pero un overlay sí puede modificarlos.
+
+### Lab 16 · Saga por coreografía
+
+- **L16-1 🟡 La UI consulta cada ~1 s en lugar de usar SSE**, como decía el plan. Es más simple, robusto y suficiente para ver la saga avanzar.
+  **Pregunta:** ¿quieres que lo cambie a SSE (Server-Sent Events) para mostrar push real?
+- **L16-2 🟢 Kit compartido para los dos participantes Python** (`services/py-saga-kit`), con outbox, inbox, envelope y consumidor. Para poder copiarlo, el contexto de build de esos servicios es `services/`. En Java, las 4 clases equivalentes están duplicadas en `orders` y `payments`.
+- **L16-3 🟢 Cancelar solo se permite antes del pivote (el cobro).** Después responde `409`. Las carreras entre la cancelación y el cobro se resuelven recordando las cancelaciones en pagos, inventario y envíos.
+- **L16-4 🟢 S6 (timeout del pago) y S13 (participante que nunca responde) quedan para el lab 17:** necesitan un coordinador que mida el tiempo de la saga.
+- **L16-5 🟢 Agregué `INV-005` con 1 unidad** al stock inicial, para el caso S12.

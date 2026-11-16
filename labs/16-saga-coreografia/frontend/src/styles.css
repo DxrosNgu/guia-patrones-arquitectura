@@ -1,0 +1,97 @@
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --text: #1c2230;
+  --muted: #5f6878;
+  --border: #dde1e8;
+  --accent: #3949ab;
+  --ok: #1f8a4c;
+  --bad: #b3261e;
+  --warn: #b26b00;
+  --progress: #1565c0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b;
+    --surface: #1b2029;
+    --text: #e7eaf0;
+    --muted: #9aa3b2;
+    --border: #2c3340;
+  }
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+
+header {
+  display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
+  padding: 0.9rem 1.25rem; background: var(--accent); color: #fff;
+}
+header h1 { margin: 0; font-size: 1.2rem; }
+.muted-light { opacity: 0.8; font-size: 0.9rem; }
+
+main { padding: 1rem; max-width: 1280px; margin: 0 auto; }
+h2 { font-size: 0.95rem; margin: 0.25rem 0 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.muted { color: var(--muted); }
+.small-text { font-size: 0.85rem; margin: 0.4rem 0 1rem; }
+
+.grid { display: grid; grid-template-columns: 300px 1fr 1.3fr; gap: 1rem; align-items: start; }
+@media (max-width: 960px) { .grid { grid-template-columns: 1fr; } }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; min-width: 0; }
+
+button {
+  font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); padding: 0.45rem 0.75rem;
+}
+button:hover { border-color: var(--accent); }
+button.danger { border-color: var(--bad); color: var(--bad); }
+button.small { padding: 0.2rem 0.6rem; font-size: 0.85rem; }
+
+.scenario { display: block; width: 100%; text-align: left; margin-bottom: 0.5rem; }
+.scenario small { display: block; color: var(--muted); margin-top: 0.15rem; }
+
+.segmented { display: flex; gap: 0; }
+.segmented button { border-radius: 0; flex: 1; }
+.segmented button:first-child { border-radius: 8px 0 0 8px; }
+.segmented button:last-child { border-radius: 0 8px 8px 0; }
+.segmented button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+table { width: 100%; border-collapse: collapse; }
+td { padding: 0.25rem 0; border-bottom: 1px solid var(--border); }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.orders { list-style: none; margin: 0; padding: 0; }
+.orders li {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 0.6rem; align-items: center;
+  padding: 0.5rem; border-radius: 8px; cursor: pointer;
+}
+.orders li:hover { background: var(--bg); }
+.orders li.selected { outline: 2px solid var(--accent); }
+.id { font-size: 0.85rem; color: var(--muted); }
+
+.chip { font-size: 0.78rem; font-weight: 600; padding: 0.15rem 0.55rem; border-radius: 999px; white-space: nowrap; }
+.tone-neutral { background: #e8eaf0; color: #3b4352; }
+.tone-progress { background: #e3efff; color: var(--progress); }
+.tone-ok { background: #e3f5ea; color: var(--ok); }
+.tone-bad { background: #fde8e6; color: var(--bad); }
+.tone-warn { background: #fff1dc; color: var(--warn); }
+
+.row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+
+.timeline { list-style: none; margin: 0; padding: 0; }
+.entry { display: grid; grid-template-columns: 1.6rem 1fr auto; gap: 0.5rem; padding: 0.55rem 0; border-bottom: 1px solid var(--border); }
+.entry .icon { font-weight: 700; text-align: center; }
+.entry-type { font-weight: 600; font-size: 0.9rem; }
+.entry-text { color: var(--muted); font-size: 0.88rem; }
+.entry time { color: var(--muted); font-size: 0.8rem; }
+.entry.step .icon { color: var(--progress); }
+.entry.compensation .icon, .entry.compensation .entry-type { color: var(--warn); }
+.entry.failure .icon, .entry.failure .entry-type { color: var(--bad); }
+.entry.ignored { opacity: 0.6; }
+.waiting { margin-top: 0.75rem; }
+
+.alert { padding: 0.6rem 0.9rem; border: 1px solid var(--bad); border-radius: 8px; background: rgb(179 38 30 / 0.08); }

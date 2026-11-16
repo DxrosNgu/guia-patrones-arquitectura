@@ -1,0 +1,41 @@
+### Lab 16 · Saga por coreografía
+@orders = http://localhost:8102
+
+### S1 · Camino feliz
+POST {{orders}}/api/orders
+Content-Type: application/json
+
+{ "customerId": "ana", "items": [{ "sku": "INV-001", "quantity": 1, "unitPrice": 49.90 }] }
+
+### S3 · Pago rechazado (725 > 500) → inventario compensa
+POST {{orders}}/api/orders
+Content-Type: application/json
+
+{ "customerId": "ana", "items": [{ "sku": "INV-004", "quantity": 10, "unitPrice": 72.50 }] }
+
+### Pedidos y su estado
+GET {{orders}}/api/orders
+
+### Un pedido con su línea de tiempo (reemplaza el id)
+GET {{orders}}/api/orders/REEMPLAZA-ID
+
+### S11 · Cancelar (solo antes del pivote)
+POST {{orders}}/api/orders/REEMPLAZA-ID/cancel
+
+### Transportista: ok | down (S4) | reject (S5)
+PUT http://localhost:8105/api/carrier
+Content-Type: application/json
+
+{ "mode": "reject" }
+
+### Estado de cada participante
+GET http://localhost:8103/api/stock
+
+###
+GET http://localhost:8103/api/reservations
+
+###
+GET http://localhost:8104/api/payments
+
+###
+GET http://localhost:8105/api/shipments

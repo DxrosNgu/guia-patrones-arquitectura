@@ -335,7 +335,7 @@ flowchart TD
 | 13 | Cache-Aside | BD saturada por lecturas | Catálogo muy consultado | Quarkus | Redis | 🗓️ |
 | 14 | CQRS | El modelo de escritura no sirve para consultar | Historial de pedidos con datos de 3 servicios | Quarkus · FastAPI · React | Kafka · MongoDB | 🗓️ |
 | [15](labs/15-transactional-outbox/) | Transactional Outbox · Polling Publisher · Log Tailing | Guardar y publicar no es atómico | Pedido creado sin su evento | Quarkus | Kafka · Debezium | ✅ |
-| 16 | Saga (coreografía) | Una transacción de negocio entre 4 BD | Flujo de compra completo con compensaciones | Quarkus · FastAPI · React | Kafka | 🗓️ |
+| [16](labs/16-saga-coreografia/) | Saga (coreografía) | Una transacción de negocio entre 4 BD | Flujo de compra completo con compensaciones | Quarkus · FastAPI · React | Kafka | ✅ |
 | 17 | Saga (orquestación) | Lo mismo, con el flujo explícito y visible | El mismo flujo con orquestador | Quarkus · FastAPI · React | Kafka · (Temporal) | 🗓️ |
 | 18 | Event Sourcing | El estado actual pierde la historia | Monedero cuyo saldo se deriva de eventos | Quarkus | — | 🗓️ |
 | 19 | Anti-Corruption Layer | El modelo de un legado contamina el tuyo | Integración con un transportista legado (XML) | FastAPI | — | 🗓️ |
@@ -572,6 +572,8 @@ PostgreSQL está en todos los labs, así que no figura en la columna *Infra extr
 
 #### 16 · Saga por coreografía
 
+✅ [Ir al lab](labs/16-saga-coreografia/)
+
 - **Patrones:** Saga · Choreography · Compensating Transaction · Semantic Lock.
 - **Problema:** "hacer un pedido" toca 4 servicios con 4 bases de datos, y no existe una transacción ACID que los abarque a todos. 2PC/XA no es una opción práctica: bloquea recursos, reduce la disponibilidad y la mayoría de brokers y bases NoSQL no lo soportan.
 - **Caso:** el flujo de compra.
@@ -581,7 +583,7 @@ PostgreSQL está en todos los labs, así que no figura en la columna *Infra extr
   4. **Envíos** programa el despacho. Es un paso reintentable.
   5. **Pedidos** aprueba el pedido.
 
-  Cada servicio reacciona al evento del anterior y publica el suyo. Las compensaciones también son eventos (`StockReleased`, `PaymentRefunded`, `OrderCancelled`). Todos los servicios publican con outbox (lab 15) y consumen de forma idempotente (lab 12). La UI React muestra en vivo la línea de tiempo de cada pedido, usando SSE.
+  Cada servicio reacciona al evento del anterior y publica el suyo. Las compensaciones también son eventos (`StockReleased`, `PaymentRefunded`, `OrderCancelled`). Todos los servicios publican con outbox (lab 15) y consumen de forma idempotente (lab 12). La UI React muestra la línea de tiempo de cada pedido mientras avanza (consulta cada segundo).
 - **Rómpelo:** reproduce los casos de la [matriz de casos de la saga](#los-casos-de-la-saga).
 
 #### 17 · Saga por orquestación

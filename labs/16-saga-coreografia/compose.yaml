@@ -1,0 +1,83 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Lab 16 · Saga por coreografía
+#
+#   docker compose up --build -d      → http://localhost:3000 (UI de la saga)
+#
+# Cuatro participantes, cada uno con su base, su outbox y su inbox:
+#   orders (Quarkus) · inventory (FastAPI) · payments (Quarkus) · shipping (FastAPI)
+# ─────────────────────────────────────────────────────────────────────────
+name: lab16-saga-coreografia
+
+include:
+  - ../../infra/postgres.yaml
+  - ../../infra/kafka.yaml
+
+x-after-kafka: &after-kafka
+  postgres:
+    condition: service_healthy
+  kafka-init:
+    condition: service_completed_successfully
+
+services:
+  # Un topic por participante: cada uno publica SOLO en el suyo.
+  kafka-init:
+    image: apache/kafka:4.3.2
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        for topic in orders.events inventory.events payments.events shipping.events; do
+          /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic $$topic --partitions 3 --replication-factor 1
+        done
+
+  orders:
+    build: ./services/orders
+    image: mercado/lab16-orders:1.0.0
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/orders
+      QUARKUS_DATASOURCE_USERNAME: orders
+      QUARKUS_DATASOURCE_PASSWORD: orders
+    depends_on: *after-kafka
+
+  inventory:
+    build:
+      context: ./services            # incluye py-saga-kit
+      dockerfile: inventory/Dockerfile
+    image: mercado/lab16-inventory:1.0.0
+    environment:
+      DATABASE_URL: postgresql+psycopg://inventory:inventory@postgres:5432/inventory
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on: *after-kafka
+
+  payments:
+    build: ./services/payments
+    image: mercado/lab16-payments:1.0.0
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/payments
+      QUARKUS_DATASOURCE_USERNAME: payments
+      QUARKUS_DATASOURCE_PASSWORD: payments
+    depends_on: *after-kafka
+
+  shipping:
+    build:
+      context: ./services
+      dockerfile: shipping/Dockerfile
+    image: mercado/lab16-shipping:1.0.0
+    environment:
+      DATABASE_URL: postgresql+psycopg://shipping:shipping@postgres:5432/shipping
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      CARRIER_MODE: ${CARRIER_MODE:-ok}
+    depends_on: *after-kafka
+
+  frontend:
+    build: ./frontend
+    image: mercado/lab16-frontend:1.0.0
+    depends_on:
+      orders:
+        condition: service_healthy
+      inventory:
+        condition: service_healthy
