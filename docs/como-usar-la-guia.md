@@ -10,7 +10,7 @@ docker compose version
 
 Si ves `v2.24` o más (o `v5.x`), estás listo. Asigna a Docker al menos 8 GB de RAM; los labs con Kafka y observabilidad piden más, así que si puedes dale 16 GB.
 
-No necesitas Java, Python ni Node instalados: cada servicio se compila **dentro** de un contenedor. Solo te hacen falta si quieres usar el modo desarrollo (sección 5) o correr los tests fuera de Docker.
+No necesitas Java, Python ni Node instalados: cada servicio se compila **dentro** de un contenedor. Solo te hacen falta si quieres usar el modo desarrollo (sección 5) o correr los tests fuera de Docker. Para Python se usa [uv](https://docs.astral.sh/uv/); la forma anterior con `pip` está explicada en [`old/pip/`](../old/pip/).
 
 ## 2. Elige una ruta
 
@@ -45,9 +45,8 @@ cd services/catalog && ./mvnw quarkus:dev
 
 ```bash
 cd services/inventory
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt -r requirements-dev.txt
-uvicorn app.main:create_app --factory --reload --port 8103
+uv sync                                   # crea .venv con las versiones exactas de uv.lock
+uv run uvicorn app.main:create_app --factory --reload --port 8103
 ```
 
 ```bash
@@ -58,7 +57,7 @@ Correr los tests:
 
 ```bash
 cd services/catalog && ./mvnw verify      # Quarkus (usa Docker para la BD de prueba)
-cd services/inventory && pytest           # FastAPI
+cd services/inventory && uv run pytest    # FastAPI
 ```
 
 ## 6. Si algo falla

@@ -3,7 +3,7 @@
 > La misma imagen, desplegada en local, dev y prod, se comporta distinto **solo** porque recibe otra configuración.
 
 **Patrones:** Externalized Configuration · The Twelve-Factor App (III *Config*, V *Build, release, run*, X *Dev/prod parity*)
-**Stack:** Quarkus · FastAPI · React + nginx · **Infra:** PostgreSQL · **Tiempo estimado:** 1 a 1,5 h · **Requiere:** nada (es el primer lab)
+**Stack:** Quarkus · FastAPI (uv) · React + TypeScript + nginx · **Infra:** PostgreSQL · **Tiempo estimado:** 1 a 1,5 h · **Requiere:** nada (es el primer lab)
 
 | local | prod |
 |---|---|
@@ -67,8 +67,8 @@ flowchart LR
 |---|---|---|
 | Configuración tipada que falla al arrancar si falta algo | [`AppConfig.java`](services/catalog/src/main/java/com/mercadoinventos/catalog/AppConfig.java), [`config.py`](services/inventory/app/config.py) | *Fail fast*: un error claro al iniciar es mejor que un `null` en producción. |
 | Propiedades que se leen del entorno | [`application.properties`](services/catalog/src/main/resources/application.properties) | `app.environment=${APP_ENV}` no tiene valor por defecto **a propósito**. |
-| Secretos como archivos (convención `*_FILE`) | [`docker-entrypoint.sh`](services/catalog/docker-entrypoint.sh) | Es la misma convención de las imágenes oficiales de Postgres: el contenedor ve la ruta y no el secreto. |
-| Configuración del frontend en tiempo de ejecución | [`40-runtime-config.sh`](frontend/nginx/40-runtime-config.sh), [`config.js`](frontend/src/config.js) | `import.meta.env` se fija al compilar. `/config.js` se genera al **arrancar**, así que la imagen sirve para cualquier ambiente. |
+| Secretos como archivos (convención `*_FILE`) | [`docker-entrypoint.sh`](../../shared/docker/docker-entrypoint.sh) | Es la misma convención de las imágenes oficiales de Postgres: el contenedor ve la ruta y no el secreto. |
+| Configuración del frontend en tiempo de ejecución | [`40-runtime-config.sh`](frontend/nginx/40-runtime-config.sh), [`config.ts`](frontend/src/config.ts) | `import.meta.env` se fija al compilar. `/config.js` se genera al **arrancar**, así que la imagen sirve para cualquier ambiente. |
 | Un archivo base y un overlay por ambiente | [`compose.yaml`](compose.yaml) + [`override`](compose.override.yaml) / [`dev`](compose.dev.yaml) / [`prod`](compose.prod.yaml) | El base dice qué es igual en todos lados; cada overlay dice qué cambia. |
 
 ### Tres formas de entregar un secreto (una por ambiente)
@@ -213,9 +213,8 @@ cd services/catalog && ./mvnw quarkus:dev             # Dev Services crea el Pos
 ```
 
 ```bash
-cd services/inventory && python -m venv .venv && . .venv/bin/activate
-pip install -r requirements-dev.txt
-APP_ENV=local-host SUPPLIER_API_KEY=sk-fake uvicorn app.main:create_app --factory --reload --port 8103
+cd services/inventory && uv sync
+APP_ENV=local-host SUPPLIER_API_KEY=sk-fake uv run uvicorn app.main:create_app --factory --reload --port 8103
 ```
 
 ```bash
@@ -239,7 +238,7 @@ Agrega una variable `SUPPORT_EMAIL` que el frontend muestre en el pie de página
 
 <details><summary>Pista</summary>
 
-Agrégala a `40-runtime-config.sh` (como `appTitle`), a `loadConfig` con un valor por defecto y a cada overlay o `.env.*`. Escribe primero el test en `config.test.js`.
+Agrégala a `40-runtime-config.sh` (como `appTitle`), a `loadConfig` con un valor por defecto y a cada overlay o `.env.*`. Escribe primero el test en `config.test.ts`.
 </details>
 
 ## Para profundizar

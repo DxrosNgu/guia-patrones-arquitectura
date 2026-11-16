@@ -1,0 +1,28 @@
+[project]
+name = "shipping"
+version = "1.0.0"
+description = "Mercado de Inventos · 16-saga-coreografia · servicio shipping"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi==0.163.1",
+    "uvicorn==0.54.0",
+    "pydantic-settings==2.16.3",
+    "sqlalchemy==2.1.8",
+    "psycopg[binary]==3.3.9",
+    "aiokafka==0.15.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.2.0",
+    "httpx2==2.16.1",
+    "testcontainers[postgres]==4.15.0",
+]
+
+[tool.uv]
+# Es una aplicación, no una librería: uv no la instala como paquete.
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = [".", "../../../../shared/python"]
+testpaths = ["tests"]

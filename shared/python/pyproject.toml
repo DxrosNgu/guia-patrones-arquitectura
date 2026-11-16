@@ -1,0 +1,25 @@
+[project]
+name = "saga-kit"
+version = "1.0.0"
+description = "Kit de mensajería para los participantes Python de las sagas (labs 16 y 17): envelope, outbox, inbox y consumidor de Kafka"
+requires-python = ">=3.13"
+dependencies = [
+    "sqlalchemy==2.1.8",
+    "psycopg[binary]==3.3.9",
+    "aiokafka==0.15.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.2.0",
+    "testcontainers[postgres]==4.15.0",
+]
+
+[tool.uv]
+# Los servicios no lo instalan como paquete: lo copian (Docker) o lo ponen en el
+# pythonpath (tests). Así no hace falta publicarlo en ningún registro.
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

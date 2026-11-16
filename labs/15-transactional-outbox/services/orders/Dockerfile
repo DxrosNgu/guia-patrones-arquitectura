@@ -18,7 +18,6 @@ COPY --from=build /src/target/quarkus-app/lib/ ./lib/
 COPY --from=build /src/target/quarkus-app/*.jar ./
 COPY --from=build /src/target/quarkus-app/app/ ./app/
 COPY --from=build /src/target/quarkus-app/quarkus/ ./quarkus/
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 # No correr como root dentro del contenedor.
 RUN adduser -D -u 1001 app
@@ -28,5 +27,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=5s --timeout=3s --start-period=20s --retries=20 \
   CMD wget -qO- http://localhost:8080/q/health/ready > /dev/null || exit 1
 
-ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["java", "-XX:MaxRAMPercentage=75", "-jar", "quarkus-run.jar"]

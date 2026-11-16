@@ -1,0 +1,5 @@
+# Lo que no debe entrar en las imágenes cuando un lab hace COPY --from=shared.
+**/__pycache__
+**/.pytest_cache
+**/.venv
+python/tests

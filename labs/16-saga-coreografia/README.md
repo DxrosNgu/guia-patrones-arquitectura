@@ -3,7 +3,7 @@
 > Una transacción de negocio que cruza cuatro bases de datos no puede ser ACID. Una **saga** la parte en pasos locales y, si uno falla, deshace los anteriores con **compensaciones**. En la coreografía no hay coordinador: cada servicio reacciona a los eventos de los demás.
 
 **Patrones:** Saga · Choreography · Compensating Transaction · Semantic Lock · Pivot Transaction — construida sobre Transactional Outbox (lab 15) e Idempotent Consumer (lab 12)
-**Stack:** Quarkus (orders, payments) · FastAPI (inventory, shipping) · React · **Infra:** PostgreSQL, Kafka · **Tiempo estimado:** 2 a 3 h · **Requiere:** labs 05, 06, 12 y 15
+**Stack:** Quarkus (orders, payments) · FastAPI (inventory, shipping) · React + TypeScript · **Infra:** PostgreSQL, Kafka · **Tiempo estimado:** 2 a 3 h · **Requiere:** labs 05, 06, 12 y 15
 
 ![UI del lab: escenarios, pedidos y la línea de tiempo de una saga con compensaciones](docs/ui.png)
 
@@ -84,7 +84,7 @@ BEGIN
 COMMIT
 ```
 
-Sin esto, la saga **no** es confiable: un duplicado cobraría dos veces y una caída entre "guardar" y "publicar" dejaría la saga colgada para siempre. En Python vive en un kit compartido ([`py-saga-kit/saga_kit`](services/py-saga-kit/saga_kit)); en Java, en el paquete `saga` de cada servicio.
+Sin esto, la saga **no** es confiable: un duplicado cobraría dos veces y una caída entre "guardar" y "publicar" dejaría la saga colgada para siempre. En Python vive en un kit compartido por los labs 16 y 17 ([`shared/python/saga_kit`](../../shared/python/saga_kit)); en Java, en el paquete `saga` de cada servicio.
 
 ### El estado del pedido: una máquina de estados
 

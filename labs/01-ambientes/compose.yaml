@@ -19,13 +19,18 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U catalog -d catalog"]
+      # Por TCP (-h 127.0.0.1): el socket Unix ya responde durante el init.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U catalog -d catalog"]
       interval: 5s
       timeout: 3s
       retries: 20
 
   catalog:
-    build: ./services/catalog
+    build:
+      context: ./services/catalog
+      # Archivos compartidos entre labs (shared/): el Dockerfile los usa con COPY --from=shared
+      additional_contexts:
+        shared: ../../shared
     # El tag es la VERSIÓN, no el ambiente: la misma imagen viaja de local a prod.
     image: mercado/lab01-catalog:${APP_VERSION:-1.0.0}
     environment:
@@ -41,7 +46,10 @@ services:
         condition: service_healthy
 
   inventory:
-    build: ./services/inventory
+    build:
+      context: ./services/inventory
+      additional_contexts:
+        shared: ../../shared
     image: mercado/lab01-inventory:${APP_VERSION:-1.0.0}
     environment:
       APP_ENV: ${APP_ENV:-local}

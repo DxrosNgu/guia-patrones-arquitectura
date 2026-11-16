@@ -87,7 +87,7 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 
 - **L16-1 🟡 La UI consulta cada ~1 s en lugar de usar SSE**, como decía el plan. Es más simple, robusto y suficiente para ver la saga avanzar.
   **Pregunta:** ¿quieres que lo cambie a SSE (Server-Sent Events) para mostrar push real?
-- **L16-2 🟢 Kit compartido para los dos participantes Python** (`services/py-saga-kit`), con outbox, inbox, envelope y consumidor. Para poder copiarlo, el contexto de build de esos servicios es `services/`. En Java, las 4 clases equivalentes están duplicadas en `orders` y `payments`.
+- **L16-2 🟢 Kit compartido para los participantes Python de los labs 16 y 17** ([`shared/python/saga_kit`](shared/python/saga_kit)), con outbox, inbox, envelope y consumidor. Los Dockerfiles lo copian con `COPY --from=shared` (S-02). En Java, las 4 clases equivalentes siguen dentro de cada servicio: cada copia tiene su propio paquete (`…orders.saga`, `…payments.saga`), así que cuentan como "otra versión".
 - **L16-3 🟢 Cancelar solo se permite antes del pivote (el cobro).** Después responde `409`. Las carreras entre la cancelación y el cobro se resuelven recordando las cancelaciones en pagos, inventario y envíos.
 - **L16-4 🟢 S6 (timeout del pago) y S13 (participante que nunca responde) quedan para el lab 17:** necesitan un coordinador que mida el tiempo de la saga.
 - **L16-5 🟢 Agregué `INV-005` con 1 unidad** al stock inicial, para el caso S12.
@@ -98,4 +98,4 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 - **L17-2 🟢 Timeouts:** 5 s por paso y 3 intentos antes del pivote. Después del pivote y en las compensaciones se reintenta para siempre. Todo es configurable (`SAGA_STEP_TIMEOUT`, `SAGA_MAX_ATTEMPTS`).
 - **L17-3 🟡 Temporal no está implementado:** solo aparece en el README como alternativa y ejercicio avanzado.
   **Pregunta:** ¿quieres una variante con Temporal?
-- **L17-4 🟢 Este es el primer frontend en TypeScript** (tu respuesta S-06). Los de los labs 01 y 16 los migro después.
+- **L17-4 ✅ Frontends en TypeScript** (tu respuesta S-06): los de los labs 01, 16 y 17 ya están migrados.

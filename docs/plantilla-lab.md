@@ -18,11 +18,13 @@ labs/NN-nombre-del-patron/
 ├── requests.http            ← peticiones listas para VS Code REST Client o IntelliJ
 ├── smoke.sh                 ← prueba de humo: verifica que el lab funciona de punta a punta
 └── services/
-    └── <servicio>/          ← proyecto Quarkus (pom.xml) o FastAPI (requirements.txt)
+    └── <servicio>/          ← proyecto Quarkus (pom.xml) o FastAPI (pyproject.toml + uv.lock)
 ```
 
 ## Reglas
 
+- **Lo compartido entre labs va en [`shared/`](../shared/)** y se usa con `additional_contexts` de Compose (`COPY --from=shared …`). Si un lab necesita una versión distinta, lleva su propia copia.
+- **Frontends en TypeScript** y **servicios Python con uv**.
 - **`name:`** al inicio de `compose.yaml` con el formato `labNN-nombre`. Así los contenedores de un lab no se mezclan con los de otro.
 - **Valores por defecto** en `compose.yaml` (`${VAR:-valor}`): el lab arranca aunque no hayas copiado `.env`.
 - **Healthchecks** en todo servicio del que otro dependa, y `depends_on: condition: service_healthy`.

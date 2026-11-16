@@ -46,6 +46,7 @@ En el primer arranque, `postgres/init/01-databases.sh` crea una base y un usuari
 
 - El usuario `orders` con contraseña `orders` solo puede entrar a la base `orders`. Si intenta conectarse a `inventory`, recibe `User does not have CONNECT privilege`.
 - El script **solo corre con el volumen vacío**. Si cambias la lista, ejecuta `docker compose down -v`.
+- El healthcheck usa `pg_isready -h 127.0.0.1` (TCP), no el socket Unix. Mientras corren los scripts de init, la imagen levanta un Postgres **temporal que solo escucha en el socket**. Con un healthcheck por socket, el contenedor queda *healthy* antes de tiempo, y un servicio que arranca en esa ventana falla al conectarse por TCP. Pasó al reverificar el lab 10, y se reprodujo consultando los dos modos en paralelo durante el arranque. Lección: un healthcheck debe comprobar el servicio **como lo usan sus clientes**.
 
 ## Kafka: dos listeners
 

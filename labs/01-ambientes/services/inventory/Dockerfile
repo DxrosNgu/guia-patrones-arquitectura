@@ -1,18 +1,26 @@
 # syntax=docker/dockerfile:1
-# Esta imagen se construye UNA vez y se usa igual en local, dev y prod.
+# Imagen del servicio con uv. La versión anterior con pip está en old/pip/labs/01-ambientes/services/inventory/.
 FROM python:3.13.15-slim
+COPY --from=astral/uv:0.11.32 /uv /bin/uv
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never \
+    PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
-COPY requirements.txt .
-RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
 
+# 1) Solo dependencias, exactamente las de uv.lock (capa cacheable: cambia poco).
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --locked --no-dev --no-install-project
+
+# 2) El código (cambia seguido).
 COPY app ./app
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+# Convención *_FILE para secretos (shared/docker/docker-entrypoint.sh).
+COPY --from=shared --chmod=755 docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
-# No correr como root dentro del contenedor.
 RUN useradd --uid 1001 --no-create-home app
 USER 1001
 

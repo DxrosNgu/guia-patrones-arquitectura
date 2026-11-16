@@ -19,7 +19,11 @@ services:
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres"]
+      # -h 127.0.0.1: comprobar por TCP, como se conectan los servicios. Sin -h,
+      # pg_isready usa el socket Unix, que ya responde mientras corren los scripts
+      # de init (servidor temporal sin TCP): el contenedor quedaría "healthy"
+      # antes de tiempo y los servicios fallarían al conectarse.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d postgres"]
       interval: 5s
       timeout: 3s
       retries: 20

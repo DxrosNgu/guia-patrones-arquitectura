@@ -44,8 +44,10 @@ services:
 
   inventory:
     build:
-      context: ./services            # incluye py-saga-kit
-      dockerfile: inventory/Dockerfile
+      context: ./services/inventory
+      # El kit de mensajería vive en shared/python/saga_kit (compartido por los labs 16 y 17).
+      additional_contexts:
+        shared: ../../shared
     image: mercado/lab16-inventory:1.0.0
     environment:
       DATABASE_URL: postgresql+psycopg://inventory:inventory@postgres:5432/inventory
@@ -64,8 +66,10 @@ services:
 
   shipping:
     build:
-      context: ./services
-      dockerfile: shipping/Dockerfile
+      context: ./services/shipping
+      # El kit de mensajería vive en shared/python/saga_kit (compartido por los labs 16 y 17).
+      additional_contexts:
+        shared: ../../shared
     image: mercado/lab16-shipping:1.0.0
     environment:
       DATABASE_URL: postgresql+psycopg://shipping:shipping@postgres:5432/shipping

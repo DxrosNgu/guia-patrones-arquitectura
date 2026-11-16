@@ -3,7 +3,7 @@
 > Aprende patrones de arquitectura **levantándolos, rompiéndolos y viendo cómo se recuperan**.
 > Cada laboratorio arranca con `docker compose up`.
 
-**Stack:** Quarkus 3.40 (Java 25) · FastAPI (Python 3.13) · React 19 · Kafka 4 · PostgreSQL 17 · Redis 8 · Docker Compose
+**Stack:** Quarkus 3.40 (Java 25) · FastAPI (Python 3.13 + uv) · React 19 + TypeScript · Kafka 4 · PostgreSQL 17 · Redis 8 · Docker Compose
 
 > [!NOTE]
 > **Estado: en construcción.** Los laboratorios se publican uno a uno; la columna **Estado** del [catálogo](#6-catálogo-de-patrones-y-casos) dice cuáles ya puedes levantar. Las decisiones tomadas sin consultar al autor están en [`SUPUESTOS.md`](SUPUESTOS.md).
@@ -111,7 +111,7 @@ El **código está en inglés** y la **documentación en español**. Los nombres
 | Docker Engine o Docker Desktop | Compose **v2.24+** | Levantar los labs (`include:` y `!reset` requieren 2.24 o superior) |
 | Git | cualquiera | Clonar el repositorio |
 | RAM asignada a Docker | 8 GB mínimo, 16 GB recomendado | Los labs con Kafka y observabilidad son los más pesados |
-| JDK 25, Maven 3.9+, Python 3.13+ y Node 22+ | *opcional* | Solo para el modo desarrollo (3.5) y para correr los tests fuera de Docker |
+| JDK 25, Maven 3.9+, Python 3.13+ con [uv](https://docs.astral.sh/uv/) y Node 22+ | *opcional* | Solo para el modo desarrollo (3.5) y para correr los tests fuera de Docker |
 
 No necesitas instalar Java, Python ni Node para seguir la guía. Todo se compila dentro de los contenedores con Dockerfiles multi-stage.
 
@@ -126,6 +126,8 @@ guia-patrones-arquitectura/
 │   ├── estilos.md             ← estilos de arquitectura sin laboratorio
 │   ├── glosario.md
 │   └── plantilla-lab.md       ← estructura que sigue cada lab
+├── shared/                    ← código y scripts que usan varios labs (sin copiarlos)
+├── old/pip/                   ← la versión anterior de los servicios Python, con pip
 ├── infra/                     ← bloques de Compose reutilizables
 │   ├── postgres.yaml
 │   ├── kafka.yaml             ← Kafka (KRaft) + Kafka UI
@@ -198,7 +200,7 @@ Si vas a modificar código y quieres recarga en caliente, levanta solo la infrae
 ```bash
 docker compose up -d postgres kafka              # solo infraestructura
 cd services/orders && ./mvnw quarkus:dev         # Quarkus con recarga en caliente
-cd services/inventory && uvicorn app.main:create_app --factory --reload
+cd services/inventory && uv run uvicorn app.main:create_app --factory --reload   # uv crea el entorno solo
 cd frontend && npm run dev
 ```
 

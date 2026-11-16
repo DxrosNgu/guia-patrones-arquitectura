@@ -1,16 +1,25 @@
 # syntax=docker/dockerfile:1
-# Contexto de build: services/ (para poder copiar el kit compartido py-saga-kit).
+# Imagen del servicio con uv. La versión anterior con pip está en old/pip/labs/16-saga-coreografia/services/shipping/.
 FROM python:3.13.15-slim
+COPY --from=astral/uv:0.11.32 /uv /bin/uv
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never \
+    PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
-COPY shipping/requirements.txt .
-RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
 
-COPY py-saga-kit/saga_kit ./saga_kit
-COPY shipping/app ./app
+# 1) Solo dependencias, exactamente las de uv.lock (capa cacheable: cambia poco).
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --locked --no-dev --no-install-project
+
+# 2) El código (cambia seguido).
+COPY app ./app
+# Kit compartido de mensajería (shared/python/saga_kit), vía additional_contexts de Compose.
+COPY --from=shared python/saga_kit ./saga_kit
 
 RUN useradd --uid 1001 --no-create-home app
 USER 1001

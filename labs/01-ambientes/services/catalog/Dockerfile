@@ -18,7 +18,7 @@ COPY --from=build /src/target/quarkus-app/lib/ ./lib/
 COPY --from=build /src/target/quarkus-app/*.jar ./
 COPY --from=build /src/target/quarkus-app/app/ ./app/
 COPY --from=build /src/target/quarkus-app/quarkus/ ./quarkus/
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY --from=shared --chmod=755 docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 # No correr como root dentro del contenedor.
 RUN adduser -D -u 1001 app
