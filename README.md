@@ -323,7 +323,7 @@ flowchart TD
 | [01](labs/01-ambientes/) | Externalized Configuration · Twelve-Factor | "En mi máquina funciona"; config y secretos en el código | Catálogo, inventario y web en local/dev/prod con la misma imagen | Quarkus · FastAPI · React | — | ✅ |
 | [02](labs/02-capas-hexagonal-clean/) | Capas · Hexagonal · Clean | Lógica de negocio atada al framework y a la BD | Publicar un invento: el mismo servicio en 3 arquitecturas | Quarkus · FastAPI | — | ✅ |
 | [03](labs/03-ddd/) | DDD: Aggregate · Value Object · Domain Event · Bounded Context | Modelos anémicos e invariantes rotas | Agregado Pedido con sus reglas | Quarkus | — | ✅ |
-| 04 | Monolito modular | Microservicios prematuros vs. *big ball of mud* | La tienda completa en un deployable con módulos verificados | Quarkus | — | 🗓️ |
+| [04](labs/04-monolito-modular/) | Monolito modular | Microservicios prematuros vs. *big ball of mud* | La tienda completa en un deployable con módulos verificados | Quarkus | — | ✅ |
 | [05](labs/05-microservicios/) | Microservicios · Database per Service | Equipos y despliegues acoplados por una BD compartida | Separar pedidos, inventario y pagos | Quarkus · FastAPI | — | ✅ |
 | [06](labs/06-sync-vs-async/) | Messaging · Pub/Sub · Competing Consumers · Dead Letter Channel | Acoplamiento temporal: si uno cae, caen todos | Confirmar un pedido: REST vs. evento | Quarkus · FastAPI | Kafka | ✅ |
 | 07 | API Gateway · Access Token · Rate Limiting | El frontend conoce N servicios; auth repetida | Punto de entrada único con JWT y límite por usuario | Spring Cloud Gateway · Quarkus | Keycloak · Redis | 🗓️ |
@@ -400,6 +400,8 @@ PostgreSQL está en todos los labs, así que no figura en la columna *Infra extr
 - **Cuándo no:** dominios sin reglas complejas.
 
 #### 04 · Monolito modular
+
+✅ [Ir al lab](labs/04-monolito-modular/)
 
 - **Patrones:** Modular Monolith, con un módulo por bounded context.
 - **Problema:** empezar con microservicios desde el día uno trae toda la complejidad distribuida sin sus beneficios. Pero un monolito sin límites termina en una *big ball of mud*.
