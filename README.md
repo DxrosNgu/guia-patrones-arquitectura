@@ -325,7 +325,7 @@ flowchart TD
 | 03 | DDD: Aggregate · Value Object · Domain Event · Bounded Context | Modelos anémicos e invariantes rotas | Agregado Pedido con sus reglas | Quarkus | — | 🗓️ |
 | 04 | Monolito modular | Microservicios prematuros vs. *big ball of mud* | La tienda completa en un deployable con módulos verificados | Quarkus | — | 🗓️ |
 | [05](labs/05-microservicios/) | Microservicios · Database per Service | Equipos y despliegues acoplados por una BD compartida | Separar pedidos, inventario y pagos | Quarkus · FastAPI | — | ✅ |
-| 06 | Messaging · Pub/Sub · Competing Consumers · Dead Letter Channel | Acoplamiento temporal: si uno cae, caen todos | Confirmar un pedido: REST vs. evento | Quarkus · FastAPI | Kafka | 🗓️ |
+| [06](labs/06-sync-vs-async/) | Messaging · Pub/Sub · Competing Consumers · Dead Letter Channel | Acoplamiento temporal: si uno cae, caen todos | Confirmar un pedido: REST vs. evento | Quarkus · FastAPI | Kafka | ✅ |
 | 07 | API Gateway · Access Token · Rate Limiting | El frontend conoce N servicios; auth repetida | Punto de entrada único con JWT y límite por usuario | Spring Cloud Gateway · Quarkus | Keycloak · Redis | 🗓️ |
 | 08 | Service Registry · Client/Server-side Discovery | Instancias dinámicas | Pedidos encuentra las instancias de inventario | Quarkus (Stork) · FastAPI | Consul | 🗓️ |
 | 09 | BFF · API Composition | Una pantalla necesita datos de N servicios | "Mis pedidos" en la web | FastAPI · React | — | 🗓️ |
@@ -426,6 +426,8 @@ PostgreSQL está en todos los labs, así que no figura en la columna *Infra extr
 - **Cuándo no:** con un equipo pequeño o con un dominio cuyos límites todavía no entiendes. En ese caso, empieza por el lab 04.
 
 #### 06 · Comunicación síncrona vs. asíncrona
+
+✅ [Ir al lab](labs/06-sync-vs-async/)
 
 - **Patrones:** Remote Procedure Invocation · Messaging · Publish/Subscribe · Competing Consumers · Dead Letter Channel · Event Notification vs. Event-Carried State Transfer.
 - **Problema:** acoplamiento temporal. Si pedidos llama por REST a inventario y inventario se cae, confirmar pedidos también falla.

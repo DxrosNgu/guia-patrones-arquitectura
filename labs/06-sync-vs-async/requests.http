@@ -1,0 +1,25 @@
+### Lab 06 · Comunicación síncrona vs. asíncrona
+@orders = http://localhost:8102
+@inventory = http://localhost:8103
+
+### Crear un pedido.
+### async → 202 Accepted (status PLACED)   ·   sync → 201 Created (CONFIRMED / REJECTED) o 503
+POST {{orders}}/api/orders
+Content-Type: application/json
+
+{ "customerId": "ana", "items": [{ "sku": "INV-001", "quantity": 1 }] }
+
+### Pedido sin stock (INV-002 = 0). En async se acepta y luego inventario lo marca REJECTED.
+POST {{orders}}/api/orders
+Content-Type: application/json
+
+{ "customerId": "ana", "items": [{ "sku": "INV-002", "quantity": 1 }] }
+
+### Qué procesó inventario y QUÉ RÉPLICA lo hizo (processedBy)
+GET {{inventory}}/api/reservations
+
+### Stock actual
+GET {{inventory}}/api/stock
+
+### Pedidos (inventario llama aquí cuando los eventos son "notification")
+GET {{orders}}/api/orders

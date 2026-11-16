@@ -112,3 +112,12 @@ Todas las imágenes tienen la versión fijada (nunca `latest`).
 - **L05-3 🟢 Agregué un servicio `report` (equipo de BI)** que no estaba en el plan. Sirve para mostrar el acoplamiento por base compartida (JOIN directo) contra la composición por API.
 - **L05-4 🟢 La "versión 2" de inventario se simula con `INVENTORY_V2=true`:** renombra una columna interna y mantiene el contrato de la API.
 - **L05-5 🟢 Incluí dos lecciones que aparecieron mientras construía el lab:** el rollback imposible después de una migración destructiva (expand/contract) y un pedido mal enrutado por reutilización de IP más la caché DNS.
+
+### Lab 06 · Sync vs. async
+
+- **L06-1 🟢 Un solo servicio `orders` con un switch `ORDERS_MODE=sync|async`**, en lugar de dos servicios. Para cambiar de modo basta con recrearlo.
+- **L06-2 🟢 Para inventario uso `aiokafka`**, en lugar de FastStream o confluent-kafka. Es Python puro y se ve todo el ciclo del consumidor (commit manual, DLQ, reintentos) sin magia.
+- **L06-3 🟢 Las réplicas extra para Competing Consumers son un servicio aparte**, `inventory-worker` (perfil `scale`) y sin puertos. Con `--scale inventory=N` y puertos publicados, el puerto de inventario cambiaba al reiniciar.
+- **L06-4 🟢 En pedidos, para los tests uso el conector en memoria de SmallRye**, sin un Kafka real. El Kafka real se prueba en `smoke.sh`.
+- **L06-5 🟡 Sin overlay de prod:** simular 3 brokers pide ~1,5 GB más de RAM. El README lista los cambios de configuración de prod.
+  **Pregunta:** ¿quieres un `compose.prod.yaml` con un clúster KRaft de 3 nodos de todos modos?
