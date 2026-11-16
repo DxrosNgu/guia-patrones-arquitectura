@@ -63,6 +63,14 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 - **L03-5 🟢 Los eventos de dominio son eventos CDI dentro del proceso**, con `AFTER_SUCCESS`. `/api/events` los guarda en memoria solo para verlos. La publicación entre servicios queda para los labs 06 y 15.
 - **L03-6 🟢 El lado estratégico es documentación** (tabla de "Invento" por contexto y mapa de contextos en mermaid), sin código propio. Cada relación del mapa apunta al lab que la implementa.
 
+### Lab 04 · Monolito modular
+
+- **L04-1 🟢 Puerto 8100 para `shop`**, que no estaba en la convención: el monolito junta catálogo, pedidos, inventario y pagos.
+- **L04-2 🟢 Agregué un módulo `shipping`** que escucha `OrderPlaced`. Sirve para mostrar eventos dentro del proceso sin ciclos de dependencia y la consistencia eventual dentro de un monolito (`SHIPPING_CHAOS_FAIL`).
+- **L04-3 🟢 La versión ingenua es un experimento**, no un servicio aparte: `experiments/romper-limites.sh` agrega una clase que viola un límite y muestra cómo falla el build. Corre con Docker, o con `LOCAL=1` si tienes Java 25.
+- **L04-4 🟡 Un solo usuario de base de datos para todos los esquemas.** ArchUnit no ve el SQL nativo que cruza esquemas. Un usuario por esquema obligaría a usar varios datasources y perder la transacción única. Lo explico en "Costo".
+- **L04-5 🟢 Base `shop`** (la misma que usaba la versión ingenua del lab 05), con un esquema por módulo creado por Flyway.
+
 ### Lab 05 · Microservicios
 
 - **L05-1 🟡 Sin `compose.dev.yaml` desde este lab.** Solo incluyo los overlays en los que el patrón cambia de verdad entre ambientes. Aquí, prod muestra una instancia de base por servicio. Dev sería igual a local, y el lab 01 ya enseña esa diferencia.

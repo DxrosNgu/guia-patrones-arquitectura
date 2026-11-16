@@ -1,0 +1,34 @@
+@base = http://localhost:8100
+
+### Catálogo (módulo catalog)
+GET {{base}}/api/catalog/products
+
+### Stock (módulo inventory)
+GET {{base}}/api/inventory/stock
+
+### Comprar: catálogo → inventario → pagos → pedido, en UNA transacción
+POST {{base}}/api/orders
+Content-Type: application/json
+
+{"customerId": "ana", "items": [{"sku": "INV-004", "quantity": 2}, {"sku": "INV-001", "quantity": 1}]}
+
+### Pago rechazado (600 > 500): rollback, el stock de INV-003 no cambia
+POST {{base}}/api/orders
+Content-Type: application/json
+
+{"customerId": "beto", "items": [{"sku": "INV-003", "quantity": 5}]}
+
+### Sin stock → 409
+POST {{base}}/api/orders
+Content-Type: application/json
+
+{"customerId": "ana", "items": [{"sku": "INV-002", "quantity": 1}]}
+
+### Pagos (módulo payments)
+GET {{base}}/api/payments
+
+### Envíos (módulo shipping, reacciona a OrderPlaced)
+GET {{base}}/api/shipments
+
+### Pedidos
+GET {{base}}/api/orders
