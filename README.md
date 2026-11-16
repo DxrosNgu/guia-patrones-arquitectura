@@ -334,7 +334,7 @@ flowchart TD
 | [12](labs/12-idempotencia/) | Idempotency Key · Idempotent Consumer | Reintentos que cobran dos veces | Doble clic en "Pagar" y mensajes duplicados | Quarkus · FastAPI | Kafka | ✅ |
 | 13 | Cache-Aside | BD saturada por lecturas | Catálogo muy consultado | Quarkus | Redis | 🗓️ |
 | 14 | CQRS | El modelo de escritura no sirve para consultar | Historial de pedidos con datos de 3 servicios | Quarkus · FastAPI · React | Kafka · MongoDB | 🗓️ |
-| 15 | Transactional Outbox · Polling Publisher · Log Tailing | Guardar y publicar no es atómico | Pedido creado sin su evento | Quarkus | Kafka · Debezium | 🗓️ |
+| [15](labs/15-transactional-outbox/) | Transactional Outbox · Polling Publisher · Log Tailing | Guardar y publicar no es atómico | Pedido creado sin su evento | Quarkus | Kafka · Debezium | ✅ |
 | 16 | Saga (coreografía) | Una transacción de negocio entre 4 BD | Flujo de compra completo con compensaciones | Quarkus · FastAPI · React | Kafka | 🗓️ |
 | 17 | Saga (orquestación) | Lo mismo, con el flujo explícito y visible | El mismo flujo con orquestador | Quarkus · FastAPI · React | Kafka · (Temporal) | 🗓️ |
 | 18 | Event Sourcing | El estado actual pierde la historia | Monedero cuyo saldo se deriva de eventos | Quarkus | — | 🗓️ |
@@ -555,6 +555,8 @@ PostgreSQL está en todos los labs, así que no figura en la columna *Infra extr
 - **Cuándo no:** si un CRUD con un par de índices responde las consultas, CQRS es costo sin beneficio.
 
 #### 15 · Transactional Outbox
+
+✅ [Ir al lab](labs/15-transactional-outbox/)
 
 - **Patrones:** Transactional Outbox · Polling Publisher · Transaction Log Tailing (CDC).
 - **Problema:** *dual write*. Guardar en la BD y publicar en Kafka son dos operaciones separadas. Si el proceso muere entre una y otra, el sistema queda inconsistente.

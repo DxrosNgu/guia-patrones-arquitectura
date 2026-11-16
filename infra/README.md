@@ -23,7 +23,7 @@ services:
 | `redis.yaml` | `redis` | 6379 | 07, 13 |
 | `observability.yaml` | `lgtm` (Grafana, Tempo, Loki, métricas) | 3001, 4317, 4318 | 10 en adelante |
 
-Los bloques que solo usa un lab (Debezium, Keycloak, Consul, MongoDB) se agregan aquí cuando se construye ese lab.
+Los bloques que solo usa un lab se definen **dentro de ese lab**. Por ejemplo, Debezium vive en [`labs/15-transactional-outbox/compose.yaml`](../labs/15-transactional-outbox/compose.yaml). Si más adelante otro lab los necesita, se mueven aquí.
 
 ## Cómo funciona `include`
 

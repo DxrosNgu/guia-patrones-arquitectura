@@ -1,0 +1,17 @@
+### Lab 15 · Transactional Outbox
+@orders = http://localhost:8102
+
+### Crear un pedido (se guarda con su evento en la outbox)
+POST {{orders}}/api/orders
+Content-Type: application/json
+
+{ "customerId": "ana", "items": [{ "sku": "INV-001", "quantity": 1 }] }
+
+### La outbox: en modo polling, publishedAt se llena en ~1 s
+GET {{orders}}/api/outbox
+
+### Pedidos guardados
+GET {{orders}}/api/orders
+
+### Modo cdc: estado del conector de Debezium
+GET http://localhost:8083/connectors/orders-outbox/status

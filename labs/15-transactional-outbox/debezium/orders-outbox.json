@@ -1,0 +1,26 @@
+{
+  "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+  "plugin.name": "pgoutput",
+  "database.hostname": "postgres",
+  "database.port": "5432",
+  "database.user": "admin",
+  "database.password": "admin",
+  "database.dbname": "orders",
+  "topic.prefix": "cdc",
+  "table.include.list": "public.outbox",
+  "slot.name": "orders_outbox",
+  "publication.name": "orders_outbox",
+  "publication.autocreate.mode": "filtered",
+  "snapshot.mode": "no_data",
+  "tombstones.on.delete": "false",
+
+  "transforms": "outbox",
+  "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+  "transforms.outbox.route.by.field": "aggregatetype",
+  "transforms.outbox.route.topic.replacement": "${routedByValue}.events",
+  "transforms.outbox.table.field.event.key": "aggregateid",
+  "transforms.outbox.table.fields.additional.placement": "type:header:eventType",
+
+  "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+  "value.converter": "org.apache.kafka.connect.storage.StringConverter"
+}

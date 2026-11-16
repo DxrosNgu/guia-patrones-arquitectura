@@ -1,0 +1,11 @@
+# Ambiente LOCAL (Compose lo carga solo).
+services:
+  # Debezium necesita leer el log de transacciones (WAL) en formato "lógico".
+  postgres:
+    command: ["postgres", "-c", "wal_level=logical"]
+
+  orders:
+    ports: ["8102:8080"]
+
+  connect:
+    ports: ["8083:8083"]   # API REST de Kafka Connect: http://localhost:8083/connectors

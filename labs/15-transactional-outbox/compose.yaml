@@ -1,0 +1,74 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Lab 15 · Transactional Outbox
+#
+#   docker compose up --build -d                                   → modo polling (por defecto)
+#   OUTBOX_MODE=naive docker compose up -d orders                  → dual write (versión ingenua)
+#   CHAOS_CRASH_AFTER_COMMIT=true docker compose up -d orders      → muere después del commit
+#   OUTBOX_MODE=cdc docker compose --profile cdc up -d             → Debezium publica desde el WAL
+# ─────────────────────────────────────────────────────────────────────────
+name: lab15-transactional-outbox
+
+include:
+  - ../../infra/postgres.yaml   # en este lab, con wal_level=logical (ver compose.override.yaml)
+  - ../../infra/kafka.yaml
+
+services:
+  kafka-init:
+    image: apache/kafka:4.3.2
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic orders.events --partitions 3 --replication-factor 1
+
+  orders:
+    build: ./services/orders
+    image: mercado/lab15-orders:1.0.0
+    # Tras el experimento de caos, Docker vuelve a levantar el proceso.
+    restart: on-failure
+    environment:
+      OUTBOX_MODE: ${OUTBOX_MODE:-polling}
+      CHAOS_CRASH_AFTER_COMMIT: ${CHAOS_CRASH_AFTER_COMMIT:-false}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/orders
+      QUARKUS_DATASOURCE_USERNAME: orders
+      QUARKUS_DATASOURCE_PASSWORD: orders
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+
+  # ── Modo cdc: Debezium (Kafka Connect) lee el WAL de Postgres ───────────
+  connect:
+    profiles: [cdc]
+    image: quay.io/debezium/connect:3.6.3.Final
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: debezium
+      CONFIG_STORAGE_TOPIC: connect_configs
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      STATUS_STORAGE_TOPIC: connect_statuses
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8083/connectors > /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+
+  # Registra el conector (PUT es idempotente: se puede correr muchas veces).
+  connect-init:
+    profiles: [cdc]
+    image: curlimages/curl:8.22.0
+    depends_on:
+      connect:
+        condition: service_healthy
+    volumes:
+      - ./debezium/orders-outbox.json:/connector.json:ro
+    command: ["-fsS", "-X", "PUT", "-H", "Content-Type: application/json",
+              "--data", "@/connector.json", "http://connect:8083/connectors/orders-outbox/config"]
