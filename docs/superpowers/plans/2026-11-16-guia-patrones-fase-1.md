@@ -6,7 +6,7 @@
 
 **Architecture:** Monorepo con labs independientes (`labs/NN-nombre/`), cada uno con su propio `compose.yaml` y overlays por ambiente (`compose.override.yaml` = local, `compose.dev.yaml`, `compose.prod.yaml`). La infraestructura común vive en `infra/*.yaml` y se importa con `include:`. Cada servicio es un proyecto autocontenido: Quarkus (Maven) o FastAPI (pip + requirements.txt).
 
-**Tech Stack:** Java 25 · Quarkus 3.40.1 · Python 3.13 · FastAPI 0.163 · React 19 + Vite 8 (JavaScript) · PostgreSQL 17 · Apache Kafka 4.1 (KRaft) · Redis 8 · Docker Compose ≥ 2.20.
+**Tech Stack:** Java 25 · Quarkus 3.40.1 · Python 3.13 · FastAPI 0.163 · React 19 + Vite 8 (JavaScript) · PostgreSQL 17 · Apache Kafka 4.1 (KRaft) · Redis 8 · Docker Compose ≥ 2.24.
 
 **Spec:** `docs/superpowers/specs/2026-11-16-guia-patrones-design.md` (copia del README aprobado como borrador). Supuestos tomados sin el autor: `SUPUESTOS.md`.
 

@@ -1,0 +1,28 @@
+# PostgreSQL compartido por los labs.
+#
+# Crea al iniciar una base y un usuario por servicio (Database per Service):
+# cada servicio solo puede conectarse a SU base. En local, usuario = contraseña
+# = nombre del servicio. En prod serían instancias separadas (ver lab 05).
+#
+# Uso desde un lab:   include: [../../infra/postgres.yaml]
+services:
+  postgres:
+    image: postgres:17.12-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_ADMIN_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:-admin}
+      # Bases que se crean en el primer arranque (separadas por espacio).
+      APP_DATABASES: ${POSTGRES_APP_DATABASES:-catalog orders inventory payments shipping wallet order_saga order_history legacy_shop shop}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  postgres-data:

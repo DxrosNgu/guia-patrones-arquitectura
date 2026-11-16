@@ -109,7 +109,7 @@ El **código está en inglés** y la **documentación en español**. Los nombres
 
 | Herramienta | Versión | Para qué |
 |---|---|---|
-| Docker Engine o Docker Desktop | Compose **v2.20+** | Levantar los labs (`include:` requiere 2.20 o superior) |
+| Docker Engine o Docker Desktop | Compose **v2.24+** | Levantar los labs (`include:` y `!reset` requieren 2.24 o superior) |
 | Git | cualquiera | Clonar el repositorio |
 | RAM asignada a Docker | 8 GB mínimo, 16 GB recomendado | Los labs con Kafka y observabilidad son los más pesados |
 | JDK 25, Maven 3.9+, Python 3.13+ y Node 22+ | *opcional* | Solo para el modo desarrollo (3.5) y para correr los tests fuera de Docker |

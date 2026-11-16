@@ -1,0 +1,12 @@
+# Grafana LGTM: Loki (logs) + Grafana + Tempo (trazas) + métricas Prometheus,
+# con un colector OpenTelemetry, todo en un solo contenedor. Ideal para aprender;
+# en prod cada pieza corre por separado y con almacenamiento persistente.
+#
+# Los servicios envían telemetría por OTLP a lgtm:4317 (gRPC) o lgtm:4318 (HTTP).
+services:
+  lgtm:
+    image: grafana/otel-lgtm:0.40.0
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"   # Grafana (usuario admin / admin)
+      - "4317:4317"                    # OTLP gRPC (para servicios en tu máquina)
+      - "4318:4318"                    # OTLP HTTP

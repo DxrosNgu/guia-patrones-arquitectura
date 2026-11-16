@@ -1,0 +1,11 @@
+# Redis: caché (lab 13) y rate limiting en el gateway (lab 07).
+services:
+  redis:
+    image: redis:8.10.3-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20

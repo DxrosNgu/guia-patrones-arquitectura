@@ -2,13 +2,13 @@
 
 ## 1. Prepara tu máquina
 
-Lo único obligatorio es **Docker con Compose v2.20 o superior**:
+Lo único obligatorio es **Docker con Compose v2.24 o superior**:
 
 ```bash
 docker compose version
 ```
 
-Si ves `v2.20` o más (o `v5.x`), estás listo. Asigna a Docker al menos 8 GB de RAM; los labs con Kafka y observabilidad piden más, así que si puedes dale 16 GB.
+Si ves `v2.24` o más (o `v5.x`), estás listo. Asigna a Docker al menos 8 GB de RAM; los labs con Kafka y observabilidad piden más, así que si puedes dale 16 GB.
 
 No necesitas Java, Python ni Node instalados: cada servicio se compila **dentro** de un contenedor. Solo te hacen falta si quieres usar el modo desarrollo (sección 5) o correr los tests fuera de Docker.
 
@@ -67,6 +67,6 @@ cd services/inventory && pytest           # FastAPI
 |---|---|---|
 | `port is already allocated` | Quedó levantado otro lab | `docker ps` y `docker compose down -v` en el lab anterior |
 | Un servicio reinicia en bucle | Su dependencia no está lista o falta una variable | `docker compose logs <servicio>` |
-| `include` no reconocido | Compose anterior a 2.20 | Actualiza Docker Desktop / el plugin de Compose |
+| `include` o `!reset` no reconocido | Compose anterior a 2.24 | Actualiza Docker Desktop / el plugin de Compose |
 | Builds muy lentos la primera vez | Descarga de dependencias (Maven, pip, npm) | Es normal; las siguientes usan la caché de capas |
 | Datos raros de una corrida anterior | Volúmenes viejos | `docker compose down -v` y vuelve a levantar |
