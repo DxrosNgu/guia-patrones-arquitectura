@@ -13,7 +13,7 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 
 | # | Tema | Tu respuesta | Qué hice / haré |
 |---|---|---|---|
-| S-01 ✅ | Orden de construcción | Numérico, con todos los patrones | La ruta Saga (01 → 05 → 06 → 10 → 12 → 15 → 16 → 17) ya estaba hecha. El resto sigue en orden numérico: 02, 03, 04, 07, 08, 09, 11, 13, 14, 18 a 22 |
+| S-01 ✅ | Orden de construcción | Secuencial: 1, 2, 3, 4, 5… | La ruta Saga (01, 05, 06, 10, 12, 15, 16 y 17) ya estaba hecha. Desde ahí sigo en orden: 02 ✅, 03 ✅, 04 ✅, y los próximos son 07, 08, 09, 11, 13, 14 y 18 a 22. **En pausa** hasta que respondas los supuestos de los labs que faltan (L02 en adelante, salvo L05, L06 y L10) |
 | S-02 ✅ | Archivos compartidos | En una carpeta general, salvo que sean otra versión | Carpeta `shared/` en la raíz. Los labs la usan con `additional_contexts` de Compose, sin copiarla. Lo que difiere entre labs (por ejemplo, el paquete Java de cada servicio) queda en cada lab |
 | S-03 ✅ | Upgrade de tus servicios a Spring Boot | Aparte, con la última versión de Spring Boot | Fuera de esta guía. Queda anotado para el proyecto separado: última versión estable de Spring Boot |
 | S-04 ✅ | Quarkus 4 | Solo releases. Pendiente opcional | Sigo en Quarkus 3.40.1 (estable). Quarkus 4 queda en [`docs/actualizaciones-futuras.md`](docs/actualizaciones-futuras.md) |
@@ -27,6 +27,8 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 | S-12 ✅ | Postgres compartido en local | OK, explicando que en prod van separados | Sin cambios (ver lab 05) |
 | S-13 ✅ | Licencia | Sin licencia | Sin `LICENSE` |
 | S-14 ✅ | Repos privados en el README | Son privados | Quité la sección que los nombraba |
+| S-15 ✅ | Ramas | Una rama por lab, con su merge | Desde el lab 04, cada cambio va en `lab/NN-nombre` (o `chore/…`, `docs/…`) y se integra a `main` con `git merge --no-ff`, así el historial muestra cada lab. Los labs anteriores ya estaban en `main` y no reescribí su historia |
+| S-16 ✅ | Credenciales | En el repo privado `patrones-arquitectura-credentials` | Tiene los secretos de prod del lab 01, los de dev del lab 01 (`.env.dev.secrets`) y los de prod del lab 05 (`.env.prod.secrets`), con un `instalar.sh` que los copia a tu clon. La guía ignora `*.secrets` y `secrets/*.txt` |
 
 ## Decisiones por laboratorio
 
