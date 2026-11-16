@@ -1,0 +1,86 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Lab 17 · Saga por orquestación
+#
+#   docker compose up --build -d      → http://localhost:3000 (UI de la saga)
+#
+# El ORQUESTADOR vive en orders: envía comandos a cada participante y espera
+# sus respuestas. Cada participante tiene su base, su outbox y su inbox.
+# ─────────────────────────────────────────────────────────────────────────
+name: lab17-saga-orquestacion
+
+include:
+  - ../../infra/postgres.yaml
+  - ../../infra/kafka.yaml
+
+x-after-kafka: &after-kafka
+  postgres:
+    condition: service_healthy
+  kafka-init:
+    condition: service_completed_successfully
+
+services:
+  # Un topic de COMANDOS por participante + un topic de RESPUESTAS para el orquestador.
+  kafka-init:
+    image: apache/kafka:4.3.2
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        for topic in inventory.commands payments.commands shipping.commands saga.replies; do
+          /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic $$topic --partitions 3 --replication-factor 1
+        done
+
+  orders:
+    build: ./services/orders
+    image: mercado/lab17-orders:1.0.0
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/orders
+      QUARKUS_DATASOURCE_USERNAME: orders
+      QUARKUS_DATASOURCE_PASSWORD: orders
+      # Cuánto espera el orquestador cada respuesta, y cuántos intentos antes del pivote.
+      SAGA_STEP_TIMEOUT: ${SAGA_STEP_TIMEOUT:-5s}
+      SAGA_MAX_ATTEMPTS: ${SAGA_MAX_ATTEMPTS:-3}
+    depends_on: *after-kafka
+
+  inventory:
+    build:
+      context: ./services            # incluye py-saga-kit
+      dockerfile: inventory/Dockerfile
+    image: mercado/lab17-inventory:1.0.0
+    environment:
+      DATABASE_URL: postgresql+psycopg://inventory:inventory@postgres:5432/inventory
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on: *after-kafka
+
+  payments:
+    build: ./services/payments
+    image: mercado/lab17-payments:1.0.0
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/payments
+      QUARKUS_DATASOURCE_USERNAME: payments
+      QUARKUS_DATASOURCE_PASSWORD: payments
+    depends_on: *after-kafka
+
+  shipping:
+    build:
+      context: ./services
+      dockerfile: shipping/Dockerfile
+    image: mercado/lab17-shipping:1.0.0
+    environment:
+      DATABASE_URL: postgresql+psycopg://shipping:shipping@postgres:5432/shipping
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      CARRIER_MODE: ${CARRIER_MODE:-ok}
+    depends_on: *after-kafka
+
+  frontend:
+    build: ./frontend
+    image: mercado/lab17-frontend:1.0.0
+    depends_on:
+      orders:
+        condition: service_healthy
+      inventory:
+        condition: service_healthy

@@ -151,3 +151,11 @@ Todas las imágenes tienen la versión fijada (nunca `latest`).
 - **L16-3 🟢 Cancelar solo se permite antes del pivote (el cobro).** Después responde `409`. Las carreras entre la cancelación y el cobro se resuelven recordando las cancelaciones en pagos, inventario y envíos.
 - **L16-4 🟢 S6 (timeout del pago) y S13 (participante que nunca responde) quedan para el lab 17:** necesitan un coordinador que mida el tiempo de la saga.
 - **L16-5 🟢 Agregué `INV-005` con 1 unidad** al stock inicial, para el caso S12.
+
+### Lab 17 · Saga por orquestación
+
+- **L17-1 🟢 El orquestador vive dentro de `orders`**, como en el libro de Richardson, y no en un servicio `order-saga` aparte (como decía el plan). Es un servicio menos y el flujo sigue en un solo archivo.
+- **L17-2 🟢 Timeouts:** 5 s por paso y 3 intentos antes del pivote. Después del pivote y en las compensaciones se reintenta para siempre. Todo es configurable (`SAGA_STEP_TIMEOUT`, `SAGA_MAX_ATTEMPTS`).
+- **L17-3 🟡 Temporal no está implementado:** solo aparece en el README como alternativa y ejercicio avanzado.
+  **Pregunta:** ¿quieres una variante con Temporal?
+- **L17-4 🟢 Este es el primer frontend en TypeScript** (tu respuesta S-06). Los de los labs 01 y 16 los migro después.

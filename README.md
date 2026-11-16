@@ -232,7 +232,6 @@ Los puertos son los mismos en todos los labs:
 | 8104 | `payments` |
 | 8105 | `shipping` |
 | 8106 | `wallet` |
-| 8107 | `order-saga` (orquestador) |
 | 8108 | `order-history` (lado de consultas de CQRS) |
 | 8110 | `bff-web` |
 | 8120 · 8121 · 8122 | Simulados: `legacy-shop` · `legacy-carrier` · `payment-provider` |
@@ -336,7 +335,7 @@ flowchart TD
 | 14 | CQRS | El modelo de escritura no sirve para consultar | Historial de pedidos con datos de 3 servicios | Quarkus · FastAPI · React | Kafka · MongoDB | 🗓️ |
 | [15](labs/15-transactional-outbox/) | Transactional Outbox · Polling Publisher · Log Tailing | Guardar y publicar no es atómico | Pedido creado sin su evento | Quarkus | Kafka · Debezium | ✅ |
 | [16](labs/16-saga-coreografia/) | Saga (coreografía) | Una transacción de negocio entre 4 BD | Flujo de compra completo con compensaciones | Quarkus · FastAPI · React | Kafka | ✅ |
-| 17 | Saga (orquestación) | Lo mismo, con el flujo explícito y visible | El mismo flujo con orquestador | Quarkus · FastAPI · React | Kafka · (Temporal) | 🗓️ |
+| [17](labs/17-saga-orquestacion/) | Saga (orquestación) | Lo mismo, con el flujo explícito y visible | El mismo flujo con orquestador | Quarkus · FastAPI · React | Kafka | ✅ |
 | 18 | Event Sourcing | El estado actual pierde la historia | Monedero cuyo saldo se deriva de eventos | Quarkus | — | 🗓️ |
 | 19 | Anti-Corruption Layer | El modelo de un legado contamina el tuyo | Integración con un transportista legado (XML) | FastAPI | — | 🗓️ |
 | 20 | Strangler Fig | Reescribir todo de una vez falla | Migrar la tienda legada ruta por ruta | Spring Cloud Gateway · Quarkus · FastAPI | — | 🗓️ |
@@ -588,9 +587,11 @@ PostgreSQL está en todos los labs, así que no figura en la columna *Infra extr
 
 #### 17 · Saga por orquestación
 
+✅ [Ir al lab](labs/17-saga-orquestacion/)
+
 - **Patrones:** Saga · Orchestration · Saga Execution Coordinator · Command/Reply Channels.
 - **Problema:** en la coreografía, el flujo completo no está escrito en ningún lugar. A medida que se agregan pasos, es difícil de seguir y de cambiar.
-- **Caso:** el mismo flujo de compra, coordinado por `order-saga` (Quarkus). Es una **máquina de estados persistida**: una tabla `saga_instance` guarda el paso actual y los datos. El orquestador envía comandos (`ReserveStock`, `ChargePayment`, `ScheduleShipment`) y espera las respuestas. Maneja timeouts y se reanuda después de una caída.
+- **Caso:** el mismo flujo de compra, coordinado por un orquestador que vive dentro de `orders` (Quarkus). Es una **máquina de estados persistida**: una tabla `saga_instance` guarda el paso actual y los datos. El orquestador envía comandos (`ReserveStock`, `ChargePayment`, `ScheduleShipment`) y espera las respuestas. Maneja timeouts y se reanuda después de una caída.
 - **Extensión opcional:** el mismo orquestador construido con **Temporal**, un motor de workflows durables, para comparar una saga hecha a mano con una construida sobre un motor.
 - **Rómpelo:** la misma matriz de casos que el lab 16, para comparar cómo responde cada estilo.
 

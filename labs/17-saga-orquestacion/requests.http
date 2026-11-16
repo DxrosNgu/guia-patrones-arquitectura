@@ -1,0 +1,38 @@
+### Lab 17 · Saga por orquestación
+@orders = http://localhost:8102
+
+### S1 · Camino feliz
+POST {{orders}}/api/orders
+Content-Type: application/json
+
+{ "customerId": "ana", "items": [{ "sku": "INV-001", "quantity": 1, "unitPrice": 49.90 }] }
+
+### Sagas: estado del orquestador (sagaState), intentos y compensaciones pendientes
+GET {{orders}}/api/orders
+
+### Una saga con su línea de tiempo (reemplaza el id)
+GET {{orders}}/api/orders/REEMPLAZA-ID
+
+### S11 · Cancelar (solo en RESERVING_STOCK o CHARGING)
+POST {{orders}}/api/orders/REEMPLAZA-ID/cancel
+
+### S6 · Pagos responde con 8 s de demora (el orquestador espera 5 s)
+PUT http://localhost:8104/api/chaos
+Content-Type: application/json
+
+{ "delayMs": 8000 }
+
+### Pagos vuelve a la normalidad
+PUT http://localhost:8104/api/chaos
+Content-Type: application/json
+
+{ "delayMs": 0 }
+
+### Transportista: ok | down (S4) | reject (S5)
+PUT http://localhost:8105/api/carrier
+Content-Type: application/json
+
+{ "mode": "down" }
+
+### Pagos de un pedido (¿cuántos cobros hubo?)
+GET http://localhost:8104/api/payments?orderId=REEMPLAZA-ID
