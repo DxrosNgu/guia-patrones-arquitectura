@@ -121,3 +121,10 @@ Todas las imágenes tienen la versión fijada (nunca `latest`).
 - **L06-4 🟢 En pedidos, para los tests uso el conector en memoria de SmallRye**, sin un Kafka real. El Kafka real se prueba en `smoke.sh`.
 - **L06-5 🟡 Sin overlay de prod:** simular 3 brokers pide ~1,5 GB más de RAM. El README lista los cambios de configuración de prod.
   **Pregunta:** ¿quieres un `compose.prod.yaml` con un clúster KRaft de 3 nodos de todos modos?
+
+### Lab 10 · Observabilidad
+
+- **L10-1 🟡 Sin gateway ni frontend en la traza.** El plan decía "de React a Kafka", pero el gateway es del lab 07 y todavía no existe. La traza empieza en `orders`. Cuando exista el lab 07, se puede sumar.
+- **L10-2 🟢 Pedidos consulta el stock por HTTP antes de publicar.** Así la traza tiene HTTP **y** Kafka. Es un híbrido común en la vida real (validación rápida + procesamiento asíncrono).
+- **L10-3 🟢 En Python, la telemetría se configura a mano** (sin `opentelemetry-instrument`) y el contexto de Kafka se extrae explícitamente. Así se ve cómo funciona la propagación.
+- **L10-4 🟢 SQLAlchemy 2.0.57 en este lab:** la instrumentación de OpenTelemetry (0.66b2) todavía no soporta 2.1. Los demás labs siguen en 2.1.

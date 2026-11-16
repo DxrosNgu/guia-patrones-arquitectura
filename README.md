@@ -329,7 +329,7 @@ flowchart TD
 | 07 | API Gateway · Access Token · Rate Limiting | El frontend conoce N servicios; auth repetida | Punto de entrada único con JWT y límite por usuario | Spring Cloud Gateway · Quarkus | Keycloak · Redis | 🗓️ |
 | 08 | Service Registry · Client/Server-side Discovery | Instancias dinámicas | Pedidos encuentra las instancias de inventario | Quarkus (Stork) · FastAPI | Consul | 🗓️ |
 | 09 | BFF · API Composition | Una pantalla necesita datos de N servicios | "Mis pedidos" en la web | FastAPI · React | — | 🗓️ |
-| 10 | Health Check API · Distributed Tracing · Log Aggregation · Metrics | No se ve dónde falla una petición distribuida | Seguir un pedido de React hasta Kafka | Todos | Grafana LGTM · Kafka | 🗓️ |
+| [10](labs/10-observabilidad/) | Health Check API · Distributed Tracing · Log Aggregation · Metrics | No se ve dónde falla una petición distribuida | Seguir un pedido de orders a inventory pasando por Kafka | Quarkus · FastAPI | Grafana LGTM · Kafka | ✅ |
 | 11 | Timeout · Retry · Circuit Breaker · Bulkhead · Fallback | Fallas en cascada por una dependencia lenta | Pasarela de pagos externa inestable | Quarkus · FastAPI | Grafana LGTM | 🗓️ |
 | 12 | Idempotency Key · Idempotent Consumer | Reintentos que cobran dos veces | Doble clic en "Pagar" y mensajes duplicados | Quarkus · FastAPI | Kafka | 🗓️ |
 | 13 | Cache-Aside | BD saturada por lecturas | Catálogo muy consultado | Quarkus | Redis | 🗓️ |
@@ -478,6 +478,8 @@ PostgreSQL está en todos los labs, así que no figura en la columna *Infra extr
 ### Módulo 3 · Observabilidad
 
 #### 10 · Observabilidad distribuida
+
+✅ [Ir al lab](labs/10-observabilidad/)
 
 - **Patrones:** Health Check API · Distributed Tracing · Log Aggregation · Application Metrics · Correlation ID.
 - **Problema:** una petición cruza el gateway, dos lenguajes y Kafka. Cuando algo va lento o falla, no sabes dónde.

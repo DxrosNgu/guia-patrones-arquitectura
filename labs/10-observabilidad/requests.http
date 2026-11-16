@@ -1,0 +1,27 @@
+### Lab 10 · Observabilidad
+@orders = http://localhost:8102
+@inventory = http://localhost:8103
+
+### Crear un pedido: copia el header X-Trace-Id de la respuesta y búscalo en Grafana
+POST {{orders}}/api/orders
+Content-Type: application/json
+
+{ "customerId": "ana", "items": [{ "sku": "INV-001", "quantity": 1 }, { "sku": "INV-003", "quantity": 1 }] }
+
+### Pedido sin stock → 409 (también genera traza: búscala con el filtro "Errors")
+POST {{orders}}/api/orders
+Content-Type: application/json
+
+{ "customerId": "ana", "items": [{ "sku": "INV-002", "quantity": 1 }] }
+
+### Health checks de Quarkus: liveness vs readiness
+GET {{orders}}/q/health/live
+
+###
+GET {{orders}}/q/health/ready
+
+### Health checks de inventario
+GET {{inventory}}/health/live
+
+###
+GET {{inventory}}/health/ready
