@@ -1,0 +1,4 @@
+# Ambiente LOCAL (Compose lo carga solo).
+services:
+  orders:
+    ports: ["8102:8080"]

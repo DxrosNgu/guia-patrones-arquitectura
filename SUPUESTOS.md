@@ -54,6 +54,15 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 - **L02-6 🟡 En memoria, la versión Quarkus sigue conectándose a Postgres al arrancar** (Flyway e Hibernate se inicializan siempre). Desactivarlos obligaba a cambiar el adaptador a `Instance<EntityManager>`. Lo dejé como ejercicio en lugar de complicar el código principal.
 - **L02-7 🟢 "Nombre único" se comprueba leyendo antes de escribir**, sin índice único. Bajo concurrencia puede fallar, y el README lo marca con ⚠️.
 
+### Lab 03 · DDD
+
+- **L03-1 🟢 Un solo servicio con los dos modelos** (`/api/anemic/orders` y `/api/orders`), en lugar de dos servicios como en el lab 02. Así se comparan en el mismo proyecto y se ahorra un contenedor.
+- **L03-2 🟡 El agregado lleva anotaciones de JPA** (atajo pragmático). Separarlas ya se enseña en el lab 02; aquí el foco son las invariantes. `Money`, `OrderLine` y `Quantity` son records (Hibernate los soporta como `@Embeddable`).
+- **L03-3 🟢 La invariante "no se modifica después de pagado" quedó más estricta:** las líneas solo se editan en `DRAFT`. Ajusté el texto del catálogo.
+- **L03-4 🟢 Agregué `@Version` y un experimento de concurrencia** que no estaba en el plan. El anémico pierde o duplica líneas en silencio y el agregado responde `409`. Es el argumento más claro para "un agregado = una unidad de consistencia".
+- **L03-5 🟢 Los eventos de dominio son eventos CDI dentro del proceso**, con `AFTER_SUCCESS`. `/api/events` los guarda en memoria solo para verlos. La publicación entre servicios queda para los labs 06 y 15.
+- **L03-6 🟢 El lado estratégico es documentación** (tabla de "Invento" por contexto y mapa de contextos en mermaid), sin código propio. Cada relación del mapa apunta al lab que la implementa.
+
 ### Lab 05 · Microservicios
 
 - **L05-1 🟡 Sin `compose.dev.yaml` desde este lab.** Solo incluyo los overlays en los que el patrón cambia de verdad entre ambientes. Aquí, prod muestra una instancia de base por servicio. Dev sería igual a local, y el lab 01 ya enseña esa diferencia.

@@ -322,7 +322,7 @@ flowchart TD
 |---|---|---|---|---|---|---|
 | [01](labs/01-ambientes/) | Externalized Configuration · Twelve-Factor | "En mi máquina funciona"; config y secretos en el código | Catálogo, inventario y web en local/dev/prod con la misma imagen | Quarkus · FastAPI · React | — | ✅ |
 | [02](labs/02-capas-hexagonal-clean/) | Capas · Hexagonal · Clean | Lógica de negocio atada al framework y a la BD | Publicar un invento: el mismo servicio en 3 arquitecturas | Quarkus · FastAPI | — | ✅ |
-| 03 | DDD: Aggregate · Value Object · Domain Event · Bounded Context | Modelos anémicos e invariantes rotas | Agregado Pedido con sus reglas | Quarkus | — | 🗓️ |
+| [03](labs/03-ddd/) | DDD: Aggregate · Value Object · Domain Event · Bounded Context | Modelos anémicos e invariantes rotas | Agregado Pedido con sus reglas | Quarkus | — | ✅ |
 | 04 | Monolito modular | Microservicios prematuros vs. *big ball of mud* | La tienda completa en un deployable con módulos verificados | Quarkus | — | 🗓️ |
 | [05](labs/05-microservicios/) | Microservicios · Database per Service | Equipos y despliegues acoplados por una BD compartida | Separar pedidos, inventario y pagos | Quarkus · FastAPI | — | ✅ |
 | [06](labs/06-sync-vs-async/) | Messaging · Pub/Sub · Competing Consumers · Dead Letter Channel | Acoplamiento temporal: si uno cae, caen todos | Confirmar un pedido: REST vs. evento | Quarkus · FastAPI | Kafka | ✅ |
@@ -386,14 +386,17 @@ PostgreSQL está en todos los labs, así que no figura en la columna *Infra extr
 
 #### 03 · Domain-Driven Design táctico y estratégico
 
+✅ [Ir al lab](labs/03-ddd/)
+
 - **Patrones:** Aggregate · Entity · Value Object · Domain Event · Repository · Bounded Context · Context Map.
 - **Problema:** un pedido *anémico* (solo getters y setters) con las reglas repartidas en varios servicios. Un endpoint recalcula el total y otro se olvida de hacerlo.
 - **Caso:** el agregado **Pedido** (`Order`) con los estados `DRAFT → CONFIRMED → PAID → SHIPPED` (o `CANCELLED`).
-  - Invariantes: el total es siempre la suma de las líneas, el pedido no se modifica después de pagado y hay un máximo de 10 unidades por invento.
+  - Invariantes: el total es siempre la suma de las líneas, las líneas solo se editan mientras el pedido es un borrador, hay un máximo de 10 unidades por invento y todas las líneas van en la moneda del pedido.
   - Value objects: `Money` (monto más moneda, nunca `double`) y `Quantity`.
   - Evento de dominio: `OrderConfirmed`.
 - **Lado estratégico:** el mapa de contextos de Mercado de Inventos. "Invento" significa algo distinto en Catálogo (descripción, precio), en Inventario (SKU, stock) y en Envíos (peso, dimensiones). Esa diferencia es la razón para separarlos.
 - **Rómpelo:** intenta violar cada invariante por la API. La versión ingenua acepta un pedido con el total incorrecto; la versión DDD lo rechaza.
+  Además, lanza escrituras simultáneas sobre el mismo pedido: el modelo anémico pierde o duplica líneas sin avisar, y el agregado (con `@Version`) responde `409`.
 - **Cuándo no:** dominios sin reglas complejas.
 
 #### 04 · Monolito modular

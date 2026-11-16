@@ -1,0 +1,70 @@
+@base = http://localhost:8102
+
+### ── Modelo anémico ──────────────────────────────────────────────
+
+### Crear: el total se calcula con double
+# @name anemic
+POST {{base}}/api/anemic/orders
+Content-Type: application/json
+
+{"customerId": "ana", "lines": [
+  {"sku": "INV-001", "unitPrice": 0.1, "quantity": 1},
+  {"sku": "INV-002", "unitPrice": 0.2, "quantity": 1}
+]}
+
+### Agregar 50 unidades: se acepta y el total no cambia
+POST {{base}}/api/anemic/orders/{{anemic.response.body.id}}/lines
+Content-Type: application/json
+
+{"sku": "INV-003", "unitPrice": 5, "quantity": 50}
+
+### Cualquier estado
+PUT {{base}}/api/anemic/orders/{{anemic.response.body.id}}/status
+Content-Type: application/json
+
+{"status": "banana"}
+
+### ── Agregado Order ──────────────────────────────────────────────
+
+### Crear un borrador
+# @name order
+POST {{base}}/api/orders
+Content-Type: application/json
+
+{"customerId": "ana", "currency": "PEN"}
+
+### Agregar líneas (el total se calcula solo)
+POST {{base}}/api/orders/{{order.response.body.id}}/lines
+Content-Type: application/json
+
+{"sku": "INV-001", "unitPrice": 19.99, "quantity": 2}
+
+### Más de 10 unidades → 422 MAX_QUANTITY_EXCEEDED
+POST {{base}}/api/orders/{{order.response.body.id}}/lines
+Content-Type: application/json
+
+{"sku": "INV-001", "unitPrice": 19.99, "quantity": 9}
+
+### Otra moneda → 422 CURRENCY_MISMATCH
+POST {{base}}/api/orders/{{order.response.body.id}}/lines
+Content-Type: application/json
+
+{"sku": "INV-002", "unitPrice": 5, "currency": "USD", "quantity": 1}
+
+### Confirmar → publica OrderConfirmed
+POST {{base}}/api/orders/{{order.response.body.id}}/confirm
+
+### Editar un pedido confirmado → 409 ORDER_NOT_EDITABLE
+DELETE {{base}}/api/orders/{{order.response.body.id}}/lines/INV-001
+
+### Pagar, enviar, cancelar
+POST {{base}}/api/orders/{{order.response.body.id}}/pay
+
+###
+POST {{base}}/api/orders/{{order.response.body.id}}/ship
+
+###
+POST {{base}}/api/orders/{{order.response.body.id}}/cancel
+
+### Eventos de dominio publicados
+GET {{base}}/api/events
