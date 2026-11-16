@@ -1,0 +1,36 @@
+### Lab 12 · Idempotencia
+@payments = http://localhost:8104
+@inventory = http://localhost:8103
+
+### Pago con Idempotency-Key. Ejecútalo VARIAS veces: el id no cambia y a partir
+### de la segunda respuesta llega el header "Idempotent-Replayed: true".
+POST {{payments}}/api/payments
+Content-Type: application/json
+Idempotency-Key: pago-pedido-42-intento-1
+
+{ "orderId": "pedido-42", "customerId": "ana", "amount": 120.00, "currency": "PEN" }
+
+### La misma clave con OTRO monto → 422
+POST {{payments}}/api/payments
+Content-Type: application/json
+Idempotency-Key: pago-pedido-42-intento-1
+
+{ "orderId": "pedido-42", "customerId": "ana", "amount": 999.00, "currency": "PEN" }
+
+### Sin clave: cada ejecución es un cobro NUEVO (versión ingenua)
+POST {{payments}}/api/payments
+Content-Type: application/json
+
+{ "orderId": "pedido-43", "customerId": "ana", "amount": 120.00, "currency": "PEN" }
+
+### ¿Cuántas veces se cobró cada pedido?
+GET {{payments}}/api/payments?orderId=pedido-42
+
+###
+GET {{payments}}/api/payments?orderId=pedido-43
+
+### Inventario: eventos ya procesados (la "memoria" del consumidor idempotente)
+GET {{inventory}}/api/processed-messages
+
+###
+GET {{inventory}}/api/stock

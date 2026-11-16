@@ -128,3 +128,9 @@ Todas las imágenes tienen la versión fijada (nunca `latest`).
 - **L10-2 🟢 Pedidos consulta el stock por HTTP antes de publicar.** Así la traza tiene HTTP **y** Kafka. Es un híbrido común en la vida real (validación rápida + procesamiento asíncrono).
 - **L10-3 🟢 En Python, la telemetría se configura a mano** (sin `opentelemetry-instrument`) y el contexto de Kafka se extrae explícitamente. Así se ve cómo funciona la propagación.
 - **L10-4 🟢 SQLAlchemy 2.0.57 en este lab:** la instrumentación de OpenTelemetry (0.66b2) todavía no soporta 2.1. Los demás labs siguen en 2.1.
+
+### Lab 12 · Idempotencia
+
+- **L12-1 🟢 No hay servicio de pedidos:** los eventos se publican con `publish-event.sh`. Así el lector controla exactamente cuándo se repite un evento.
+- **L12-2 🟢 Concurrencia resuelta con la `PRIMARY KEY` + `INSERT … ON CONFLICT DO NOTHING`**, sin locks explícitos ni Redis. Es lo más simple que funciona con Postgres.
+- **L12-3 🟢 Caos "muere antes del commit"** con un archivo marcador, para que se caiga **una sola** vez y no entre en un bucle de reinicios.

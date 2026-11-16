@@ -1,0 +1,53 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Lab 12 · Idempotencia
+#
+#   docker compose up --build -d
+#   IDEMPOTENT_CONSUMER=false docker compose up -d inventory        → versión ingenua
+#   CHAOS_CRASH_BEFORE_COMMIT=true docker compose up -d inventory   → muere antes del commit
+# ─────────────────────────────────────────────────────────────────────────
+name: lab12-idempotencia
+
+include:
+  - ../../infra/postgres.yaml
+  - ../../infra/kafka.yaml
+
+services:
+  kafka-init:
+    image: apache/kafka:4.3.2
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic orders.events --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic orders.events.dlq --partitions 1 --replication-factor 1
+
+  # Idempotency Key en la API
+  payments:
+    build: ./services/payments
+    image: mercado/lab12-payments:1.0.0
+    environment:
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/payments
+      QUARKUS_DATASOURCE_USERNAME: payments
+      QUARKUS_DATASOURCE_PASSWORD: payments
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Idempotent Consumer en la mensajería
+  inventory:
+    build: ./services/inventory
+    image: mercado/lab12-inventory:1.0.0
+    # Si el proceso muere (experimento de caos), Docker lo levanta de nuevo.
+    restart: on-failure
+    environment:
+      DATABASE_URL: postgresql+psycopg://inventory:inventory@postgres:5432/inventory
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      IDEMPOTENT_CONSUMER: ${IDEMPOTENT_CONSUMER:-true}
+      CHAOS_CRASH_BEFORE_COMMIT: ${CHAOS_CRASH_BEFORE_COMMIT:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
