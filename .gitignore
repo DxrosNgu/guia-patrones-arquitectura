@@ -1,0 +1,27 @@
+# Secretos y configuración local
+# .env es tu copia local de .env.example (puede tener valores personales).
+# .env.dev y .env.prod SÍ se versionan: solo contienen configuración no secreta.
+.env
+# Los secretos de prod se crean a partir de los *.example y nunca se suben.
+**/secrets/*
+!**/secrets/*.example
+!**/secrets/README.md
+
+# Java / Maven
+target/
+*.iml
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+
+# Herramientas
+.superpowers/
+.DS_Store

@@ -1,0 +1,93 @@
+# Supuestos y preguntas abiertas
+
+Este archivo reúne las decisiones que tomé **sin poder consultarte**, mientras construía la guía. Cada una explica qué decidí, por qué y qué te pregunto. Responde lo que quieras cambiar (por ejemplo: "S-06: sí, TypeScript") y lo ajusto.
+
+**Cómo leerlo:**
+- 🟢 Decisión de bajo riesgo: cambiarla es barato.
+- 🟡 Conviene que la revises: cambiarla toca varios labs.
+- 🔴 Necesito tu respuesta antes de seguir con algo concreto.
+
+---
+
+## Alcance y orden
+
+### S-01 🟡 Orden de construcción: primero la ruta "Saga a fondo"
+**Decidí:** construir primero la base del repo y los labs **01 → 05 → 06 → 10 → 12 → 15 → 16 → 17**. Después sigo con el resto en orden numérico.
+**Por qué:** tu interés de origen era Saga, y esos labs son exactamente los prerrequisitos de una saga confiable (microservicios, Kafka, observabilidad, idempotencia y outbox). Si la noche no alcanza para los 22 labs, al menos queda completa la ruta que más te importa.
+**Pregunta:** ¿te sirve ese orden o prefieres el numérico?
+
+### S-02 🟡 Estructura del repo: labs independientes con infraestructura compartida
+**Decidí:** la opción 1 que te propuse (no llegaste a elegir). Cada lab tiene sus servicios y su `compose.yaml`, y la infraestructura común vive en `infra/` y se importa con `include:`.
+**Costo:** hay código repetido entre labs (por ejemplo, `orders` aparece en varios).
+**Pregunta:** ¿confirmas la opción 1?
+
+### S-03 🟢 El upgrade de tus servicios a Spring Boot 4 no está incluido
+**Decidí:** no tocar `api-gateway`, `auth-service`, `config-server`, `eureka-server` ni `inventions-payments`. Acordamos que es un proyecto aparte.
+**Pregunta:** ¿lo planificamos cuando revises la guía?
+
+---
+
+## Stack y versiones
+
+### S-04 🟢 Java 25 + Quarkus 3.40.1
+**Decidí:** Java 25 (el LTS más reciente) y Quarkus **3.40.1**, la última versión estable. Quarkus 4.0 está en *CR1* (todavía no es final).
+**Pregunta:** ¿migramos a Quarkus 4 cuando salga la versión final?
+
+### S-05 🟢 Spring Boot 4.0.x + Spring Cloud 2025.1.x para el API Gateway
+**Decidí:** en los labs que usan Spring (07 y 20), usar Spring Boot 4.0.x con Spring Cloud 2025.1.x. Spring Boot 4.1 ya existe, pero su release train de Spring Cloud (2026.0) sigue en RC.
+**Pregunta:** ninguna por ahora. Lo actualizo cuando 2026.0 sea final.
+
+### S-06 🟡 React en JavaScript, no en TypeScript
+**Decidí:** JavaScript (JSX), igual que tu portafolio. Así el foco queda en la arquitectura y no en los tipos.
+**Pregunta:** ¿prefieres TypeScript? Cambiarlo toca todos los frontends.
+
+### S-07 🟢 Python con `pip` + `requirements.txt`
+**Decidí:** `pip` con versiones fijadas en `requirements.txt` en lugar de `uv` o `poetry`, porque cualquier developer lo entiende sin instalar nada.
+**Pregunta:** ¿prefieres `uv` con `pyproject.toml`?
+
+### S-08 🟢 Código en inglés, documentación en español
+**Decidí:** nombres de clases, eventos y endpoints en inglés (`OrderCreated`, `/orders`). Los README y los comentarios didácticos están en español.
+
+### S-09 🟢 Kafka como broker
+**Decidí:** Apache Kafka 4.1 en modo KRaft (sin ZooKeeper). Permite releer eventos (CQRS, Event Sourcing) y se integra con Debezium. RabbitMQ queda mencionado como alternativa.
+
+### S-10 🟢 Imágenes Docker
+**Decidí:** usar Docker Hub siempre que se pueda. Las excepciones:
+- Debezium 3.x solo se publica en `quay.io`.
+- Para Kafka UI uso `kafbat/kafka-ui`, el fork mantenido del proyecto de Provectus.
+
+Todas las imágenes tienen la versión fijada (nunca `latest`).
+
+---
+
+## Ambientes y seguridad
+
+### S-11 🟡 `.env.dev` y `.env.prod` se versionan
+**Decidí:**
+- `.env.dev` y `.env.prod` **sí** se suben a Git, porque solo tienen configuración no secreta (nivel de log, flags, URLs).
+- Los secretos de prod van en `secrets/*.txt`. Se crean copiando los `*.example` y **no** se suben.
+- `.env` (local) se crea desde `.env.example` y tampoco se sube.
+
+**Por qué:** así los tres ambientes se pueden levantar justo después de clonar, y queda claro qué es configuración y qué es secreto.
+**Pregunta:** ¿te parece bien esa separación?
+
+### S-12 🟢 Un solo Postgres con una base y un usuario por servicio
+**Decidí:** en local, un único contenedor Postgres que crea una base y un usuario por servicio, donde la contraseña es igual al nombre (`orders`/`orders`). El README del lab 05 explica que en prod serían instancias separadas.
+
+---
+
+## Repositorio
+
+### S-13 🔴 Licencia
+**Decidí:** no agregué licencia. Un repo público **sin licencia** significa "todos los derechos reservados", y otros developers no pueden reutilizar el código legalmente.
+**Pregunta:** ¿agrego MIT (o la que prefieras)?
+
+### S-14 🟡 La sección 8 del README menciona tus repos de `microservices-team`
+**Decidí:** mantenerla, porque conecta la guía con tu trabajo real.
+**Pregunta:** el repo de la guía es **público**. ¿Los repos de `microservices-team` también lo son? Si son privados, quizás prefieras quitar esa sección o generalizarla.
+
+---
+
+## Decisiones por laboratorio
+
+*(Las voy agregando a medida que construyo cada lab.)*
