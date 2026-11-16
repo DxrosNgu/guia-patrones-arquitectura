@@ -5,7 +5,7 @@
 **Patrones:** Distributed Tracing · Log Aggregation · Application Metrics · Health Check API · Correlation ID
 **Stack:** Quarkus + `quarkus-opentelemetry` · FastAPI + OpenTelemetry SDK · **Infra:** PostgreSQL, Kafka, Grafana LGTM (Grafana + Tempo + Loki + Prometheus + colector OTel) · **Tiempo estimado:** 1,5 h · **Requiere:** lab 06
 
-![Una sola traza: orders (Quarkus) → inventory (HTTP) → Postgres → Kafka → inventory (consumidor) → Postgres](docs/traza.png)
+![Una sola traza: orders (Quarkus), con sus spans de negocio orders.check-stock y orders.save-and-publish → inventory (HTTP) → Postgres → Kafka → inventory (consumidor) → Postgres](docs/traza.png)
 
 *Una sola petición `POST /api/orders` vista en Grafana Tempo: 15 spans y 2 servicios en 2 lenguajes, unidos por HTTP y por Kafka.*
 
@@ -67,10 +67,13 @@ flowchart LR
 | Quarkus: trazas, métricas y logs con **configuración**, sin código | [`application.properties`](services/orders/src/main/resources/application.properties) (`quarkus.otel.*`, `jdbc.telemetry`) |
 | El traceId en cada línea de log | `quarkus.log.console.format=… traceId=%X{traceId}` |
 | Correlation ID para el cliente | [`TraceIdHeader.java`](services/orders/src/main/java/com/mercadoinventos/orders/TraceIdHeader.java) |
-| Un atributo de negocio en el span (`order.id`) | [`OrderService.java`](services/orders/src/main/java/com/mercadoinventos/orders/OrderService.java) |
+| Spans de negocio en Quarkus: `@WithSpan` (`orders.check-stock`) y `Tracer` (`orders.save-and-publish`) | [`StockCheck.java`](services/orders/src/main/java/com/mercadoinventos/orders/StockCheck.java) y [`OrderService.java`](services/orders/src/main/java/com/mercadoinventos/orders/OrderService.java) |
+| Métrica de negocio en Quarkus `orders.placed` (con el `Meter`) y el atributo `order.id` | [`OrderService.java`](services/orders/src/main/java/com/mercadoinventos/orders/OrderService.java) |
 | Python: proveedores de trazas, métricas y logs | [`telemetry.py`](services/inventory/app/telemetry.py) |
 | **Continuar la traza desde un mensaje de Kafka** | [`consumer.py`](services/inventory/app/consumer.py) (`context_from_kafka_headers` + span `CONSUMER`) |
 | Métrica de negocio `inventory.reservations` | [`telemetry.py`](services/inventory/app/telemetry.py) y [`events.py`](services/inventory/app/events.py) |
+
+**¿A mano o automático?** La extensión de Quarkus instrumenta todo lo técnico sin código; en Python este lab configura el SDK a mano para que se vea cada pieza. [`docs/instrumentacion-manual-vs-automatica.md`](docs/instrumentacion-manual-vs-automatica.md) compara las dos formas en Python, Quarkus y Spring Boot, con los errores típicos de cada una.
 | Liveness vs. readiness | [`health.py`](services/inventory/app/health.py) |
 
 ## Levántalo
@@ -114,7 +117,7 @@ Para limpiar: `docker compose down -v`.
    ```
    `docker compose ps` muestra los servicios como `unhealthy`, porque su `HEALTHCHECK` usa readiness. Al volver la BD, se recuperan solos y sin reinicio.
 
-5. **Métricas, no solo trazas.** En Prometheus, `inventory_reservations_total` cuenta las reservas por resultado y `sum by (http_response_status_code) (http_server_request_duration_seconds_count{job="orders"})` muestra las respuestas de pedidos por código HTTP. Haz algunos pedidos de INV-002 (stock 0): pedidos los rechaza **antes** de publicar (consulta de stock → `409`). La serie `409` crece y las reservas de inventario no cambian. Una traza explica **una** petición; una métrica dice **cuántas** van así. Las métricas de Quarkus se exportan cada 60 s, así que espera un minuto antes de verlas.
+5. **Métricas, no solo trazas.** En Prometheus, `inventory_reservations_total` cuenta las reservas por resultado y `sum by (http_response_status_code) (http_server_request_duration_seconds_count{job="orders"})` muestra las respuestas de pedidos por código HTTP. Haz algunos pedidos de INV-002 (stock 0): pedidos los rechaza **antes** de publicar (consulta de stock → `409`). La serie `409` crece y las reservas de inventario no cambian. Una traza explica **una** petición; una métrica dice **cuántas** van así. Las métricas se exportan cada 10 s (en Quarkus el default es 60 s; aquí se bajó con `quarkus.otel.metric.export.interval`).
 
 6. **¿Qué pasa si se pierde el traceparent?** En [`consumer.py`](services/inventory/app/consumer.py), quita `context=parent` del `start_as_current_span`. Reconstruye inventario y haz un pedido: ahora el consumidor de Kafka aparece en una traza **separada**, sin relación con el pedido. Así de frágil es la propagación de contexto: un eslabón que no la pasa corta la historia.
 

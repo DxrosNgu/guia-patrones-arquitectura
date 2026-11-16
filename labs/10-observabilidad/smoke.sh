@@ -31,6 +31,9 @@ grep -q '"stringValue":"orders"' <<<"$trace"    || fail "la traza no tiene spans
 grep -q '"stringValue":"inventory"' <<<"$trace" || fail "la traza no tiene spans de inventory"
 grep -q 'orders.events process' <<<"$trace"     || fail "falta el span del consumidor de Kafka"
 ok "Tempo: una sola traza cruza orders (Quarkus) → Kafka → inventory (Python)"
+grep -q 'orders.check-stock' <<<"$trace" && grep -q 'orders.save-and-publish' <<<"$trace" \
+  || fail "faltan los spans hechos a mano (orders.check-stock con @WithSpan, orders.save-and-publish con Tracer)"
+ok "Tempo: los spans manuales de Quarkus (@WithSpan y Tracer) están en la misma traza"
 
 logs=""
 for _ in $(seq 1 10); do
@@ -50,5 +53,14 @@ for _ in $(seq 1 10); do
 done
 grep -q '"value"' <<<"$metric" || fail "Prometheus no tiene la métrica inventory_reservations_total"
 ok "Prometheus: métrica de negocio inventory_reservations_total"
+
+metric=""
+for _ in $(seq 1 10); do
+  metric=$(lgtm -G localhost:9090/api/v1/query --data-urlencode 'query=sum(orders_placed_total{result="accepted"})')
+  grep -q '"value"' <<<"$metric" && break
+  sleep 3
+done
+grep -q '"value"' <<<"$metric" || fail "Prometheus no tiene la métrica orders_placed_total (Meter de Quarkus)"
+ok "Prometheus: métrica de negocio de Quarkus orders_placed_total{result=\"accepted\"}"
 
 echo "🎉 Lab 10 OK — abre http://localhost:3001 y busca la traza $TRACE"
