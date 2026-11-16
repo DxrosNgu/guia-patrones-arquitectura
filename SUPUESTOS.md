@@ -44,6 +44,16 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 - **L01-6 🟢 Los contenedores corren sin root (uid 1001).** Los archivos de `secrets/` tienen que ser legibles por ese usuario. Con los permisos normales (644) funciona.
 - **L01-7 🟢 Para los tests de Python uso `httpx2`.** Es lo que pide Starlette ahora para su `TestClient`; con `httpx` muestra una advertencia de deprecación.
 
+### Lab 02 · Capas vs. Hexagonal vs. Clean
+
+- **L02-1 🟢 Puertos 8111 y 8112** para las versiones hexagonales (Quarkus y Python). La convención reserva 8101 para `catalog`, que aquí usa la versión en capas.
+- **L02-2 🟢 Las tres versiones comparten la base `catalog`**, cada una en su esquema (`layered`, `hexagonal`, `hexagonal_py`). Son el mismo servicio, así que no aplica Database per Service entre ellas.
+- **L02-3 🟢 El mismo contrato HTTP en las tres** (JSON, códigos de error y estados), para que el smoke y los tests de API sean idénticos. Por eso la versión en capas también devuelve `{code, message}`, aunque lo "típico" sería un 400 genérico de Bean Validation.
+- **L02-4 🟢 Clean y Onion no tienen versión propia.** Se explican con una tabla de vocabulario sobre la versión hexagonal: comparten la regla de dependencia y la diferencia es de nombres y de organización.
+- **L02-5 🟢 El CLI solo existe en la versión Python.** Agregarlo a las otras queda como experimento para el lector.
+- **L02-6 🟡 En memoria, la versión Quarkus sigue conectándose a Postgres al arrancar** (Flyway e Hibernate se inicializan siempre). Desactivarlos obligaba a cambiar el adaptador a `Instance<EntityManager>`. Lo dejé como ejercicio en lugar de complicar el código principal.
+- **L02-7 🟢 "Nombre único" se comprueba leyendo antes de escribir**, sin índice único. Bajo concurrencia puede fallar, y el README lo marca con ⚠️.
+
 ### Lab 05 · Microservicios
 
 - **L05-1 🟡 Sin `compose.dev.yaml` desde este lab.** Solo incluyo los overlays en los que el patrón cambia de verdad entre ambientes. Aquí, prod muestra una instancia de base por servicio. Dev sería igual a local, y el lab 01 ya enseña esa diferencia.

@@ -1,0 +1,40 @@
+### Cambia el puerto para probar cada arquitectura:
+###   8101 capas (Quarkus) · 8111 hexagonal (Quarkus) · 8112 hexagonal (Python)
+@base = http://localhost:8111
+
+### ¿Qué arquitectura y qué adaptador?
+GET {{base}}/api/info
+
+### Crear un borrador (sin imagen)
+# @name draft
+POST {{base}}/api/inventions
+Content-Type: application/json
+
+{"inventorId": "ana", "name": "Paraguas solar", "price": 49.90}
+
+### Publicar sin imagen → 422 IMAGE_REQUIRED
+POST {{base}}/api/inventions/{{draft.response.body.id}}/publish
+
+### Agregar la imagen
+PUT {{base}}/api/inventions/{{draft.response.body.id}}/image
+Content-Type: application/json
+
+{"imageUrl": "https://img.example/paraguas.png"}
+
+### Publicar → 200 PUBLISHED
+POST {{base}}/api/inventions/{{draft.response.body.id}}/publish
+
+### Precio 0 → 422 PRICE_MUST_BE_POSITIVE
+POST {{base}}/api/inventions
+Content-Type: application/json
+
+{"inventorId": "ana", "name": "Gratis", "price": 0}
+
+### Nombre repetido (mayúsculas y espacios no importan) → 409 NAME_ALREADY_USED
+POST {{base}}/api/inventions
+Content-Type: application/json
+
+{"inventorId": "ana", "name": "  PARAGUAS solar ", "price": 10}
+
+### Inventos de un inventor
+GET {{base}}/api/inventions?inventorId=ana

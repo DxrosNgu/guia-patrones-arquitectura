@@ -321,7 +321,7 @@ flowchart TD
 | # | Patrón(es) | Problema que resuelve | Caso en Mercado de Inventos | Stack | Infra extra | Estado |
 |---|---|---|---|---|---|---|
 | [01](labs/01-ambientes/) | Externalized Configuration · Twelve-Factor | "En mi máquina funciona"; config y secretos en el código | Catálogo, inventario y web en local/dev/prod con la misma imagen | Quarkus · FastAPI · React | — | ✅ |
-| 02 | Capas · Hexagonal · Clean | Lógica de negocio atada al framework y a la BD | Publicar un invento: el mismo servicio en 3 arquitecturas | Quarkus · FastAPI | — | 🗓️ |
+| [02](labs/02-capas-hexagonal-clean/) | Capas · Hexagonal · Clean | Lógica de negocio atada al framework y a la BD | Publicar un invento: el mismo servicio en 3 arquitecturas | Quarkus · FastAPI | — | ✅ |
 | 03 | DDD: Aggregate · Value Object · Domain Event · Bounded Context | Modelos anémicos e invariantes rotas | Agregado Pedido con sus reglas | Quarkus | — | 🗓️ |
 | 04 | Monolito modular | Microservicios prematuros vs. *big ball of mud* | La tienda completa en un deployable con módulos verificados | Quarkus | — | 🗓️ |
 | [05](labs/05-microservicios/) | Microservicios · Database per Service | Equipos y despliegues acoplados por una BD compartida | Separar pedidos, inventario y pagos | Quarkus · FastAPI | — | ✅ |
@@ -368,6 +368,8 @@ PostgreSQL está en todos los labs, así que no figura en la columna *Infra extr
 ### Módulo 1 · Arquitectura dentro de un servicio
 
 #### 02 · Capas vs. Hexagonal vs. Clean
+
+✅ [Ir al lab](labs/02-capas-hexagonal-clean/)
 
 - **Patrones:** Layered Architecture · Hexagonal (Ports & Adapters) · Clean Architecture / Onion.
 - **Problema:** las reglas de negocio están mezcladas con anotaciones de JPA y con los controladores REST. Para probar una regla hay que levantar la BD, y cambiar de canal (de REST a mensajería) obliga a tocar el dominio.

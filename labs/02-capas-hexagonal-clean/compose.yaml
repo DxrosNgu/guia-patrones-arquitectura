@@ -1,0 +1,54 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Lab 02 · Capas vs. Hexagonal vs. Clean
+#
+# El MISMO servicio (catálogo: publicar un invento) en tres arquitecturas,
+# corriendo en paralelo con el mismo contrato HTTP:
+#
+#   catalog-layered       Quarkus · controller → service → repository   :8101
+#   catalog-hexagonal     Quarkus · puertos y adaptadores               :8111
+#   catalog-hexagonal-py  FastAPI · puertos y adaptadores               :8112
+#
+#   docker compose up --build -d
+#   CATALOG_PERSISTENCE=memory docker compose up -d   → hexagonales sin Postgres
+# ─────────────────────────────────────────────────────────────────────────
+name: lab02-capas-hexagonal-clean
+
+include:
+  - ../../infra/postgres.yaml
+
+# Las tres versiones usan la base "catalog", cada una en su propio esquema.
+x-quarkus-db: &quarkus-db
+  QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/catalog
+  QUARKUS_DATASOURCE_USERNAME: catalog
+  QUARKUS_DATASOURCE_PASSWORD: catalog
+
+services:
+  catalog-layered:
+    build: ./services/catalog-layered
+    image: mercado/lab02-catalog-layered:1.0.0
+    environment:
+      <<: *quarkus-db
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  catalog-hexagonal:
+    build: ./services/catalog-hexagonal
+    image: mercado/lab02-catalog-hexagonal:1.0.0
+    environment:
+      <<: *quarkus-db
+      # postgres | memory: qué adaptador de salida se enchufa.
+      CATALOG_PERSISTENCE: ${CATALOG_PERSISTENCE:-postgres}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  catalog-hexagonal-py:
+    build: ./services/catalog-hexagonal-py
+    image: mercado/lab02-catalog-hexagonal-py:1.0.0
+    environment:
+      DATABASE_URL: postgresql+psycopg://catalog:catalog@postgres:5432/catalog
+      CATALOG_PERSISTENCE: ${CATALOG_PERSISTENCE:-postgres}
+    depends_on:
+      postgres:
+        condition: service_healthy
