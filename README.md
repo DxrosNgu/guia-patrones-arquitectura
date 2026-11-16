@@ -277,7 +277,7 @@ Los tres ambientes se simulan **en tu máquina** con *overlays* de Compose. El o
 | Swagger y herramientas | activas | activas | desactivadas |
 | Recursos | sin límites | límites suaves | `deploy.resources.limits`, `restart: unless-stopped` |
 | Datos | semilla de ejemplo, se borra con `down -v` | semilla | sin semilla, volúmenes persistentes |
-| Kafka | 1 broker, replicación 1 | 1 broker | ⚠️ en la vida real son ≥ 3 brokers; aquí se explica pero no se simula |
+| Kafka | 1 broker, replicación 1 | 1 broker | ≥ 3 brokers con replicación 3; el lab 06 lo simula de forma **opcional** |
 | Observabilidad | opcional | activa | activa, con alertas |
 
 ### Configuración por stack

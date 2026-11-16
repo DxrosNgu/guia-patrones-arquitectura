@@ -5,6 +5,7 @@
 #   ORDERS_MODE=sync docker compose up -d orders          → cambia pedidos a modo sync
 #   EVENT_STYLE=notification docker compose up -d orders  → eventos "notification"
 #   docker compose --profile scale up -d --scale inventory-worker=2  → competing consumers
+#   docker compose --profile quarkus up -d                → + el mismo consumidor en Quarkus (comparación)
 # ─────────────────────────────────────────────────────────────────────────
 name: lab06-sync-vs-async
 
@@ -24,6 +25,7 @@ services:
       - |
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic orders.events --partitions 3 --replication-factor 1
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic orders.events.dlq --partitions 1 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic orders.events.dlq-quarkus --partitions 1 --replication-factor 1
 
   orders:
     build: ./services/orders
@@ -65,6 +67,25 @@ services:
     image: mercado/lab06-inventory:1.0.0
     environment:
       DATABASE_URL: postgresql+psycopg://inventory:inventory@postgres:5432/inventory
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ORDERS_URL: http://orders:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+
+  # El MISMO consumidor de inventario escrito con Quarkus Messaging, para comparar con aiokafka.
+  # Otro group id → recibe TODOS los eventos (Publish/Subscribe). Su propio esquema en la base
+  # "inventory" y su propia DLQ. Ver docs/consumidor-aiokafka-vs-quarkus.md
+  inventory-quarkus:
+    profiles: [quarkus]
+    build: ./services/inventory-quarkus
+    image: mercado/lab06-inventory-quarkus:1.0.0
+    environment:
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/inventory
+      QUARKUS_DATASOURCE_USERNAME: inventory
+      QUARKUS_DATASOURCE_PASSWORD: inventory
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       ORDERS_URL: http://orders:8080
     depends_on:

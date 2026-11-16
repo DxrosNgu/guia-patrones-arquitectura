@@ -4,3 +4,5 @@ services:
     ports: ["8102:8080"]
   inventory:
     ports: ["8103:8000"]
+  inventory-quarkus:
+    ports: ["8133:8080"]

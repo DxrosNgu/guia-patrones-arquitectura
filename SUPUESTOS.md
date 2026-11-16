@@ -87,12 +87,21 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 
 ### Lab 06 · Sync vs. async
 
-- **L06-1 🟢 Un solo servicio `orders` con un switch `ORDERS_MODE=sync|async`**, en lugar de dos servicios. Para cambiar de modo basta con recrearlo.
-- **L06-2 🟢 Para inventario uso `aiokafka`**, en lugar de FastStream o confluent-kafka. Es Python puro y se ve todo el ciclo del consumidor (commit manual, DLQ, reintentos) sin magia.
-- **L06-3 🟢 Las réplicas extra para Competing Consumers son un servicio aparte**, `inventory-worker` (perfil `scale`) y sin puertos. Con `--scale inventory=N` y puertos publicados, el puerto de inventario cambiaba al reiniciar.
-- **L06-4 🟢 En pedidos, para los tests uso el conector en memoria de SmallRye**, sin un Kafka real. El Kafka real se prueba en `smoke.sh`.
-- **L06-5 🟡 Sin overlay de prod:** simular 3 brokers pide ~1,5 GB más de RAM. El README lista los cambios de configuración de prod.
-  **Pregunta:** ¿quieres un `compose.prod.yaml` con un clúster KRaft de 3 nodos de todos modos?
+- **L06-1 ✅ Un solo servicio `orders` con `ORDERS_MODE=sync|async`.** OK.
+- **L06-2 ✅ `aiokafka` para inventario.** **Respuesta:** hacer una comparativa con Quarkus (o con Spring si Quarkus no lo soportaba). **Hecho:** Quarkus lo soporta todo. Agregué `services/inventory-quarkus` (perfil `quarkus`), el mismo consumidor con Quarkus Messaging, más [`docs/consumidor-aiokafka-vs-quarkus.md`](labs/06-sync-vs-async/docs/consumidor-aiokafka-vs-quarkus.md) y `smoke-quarkus.sh`. El documento incluye la tabla equivalente de Spring Kafka. Lo que apareció al construirlo:
+  - `@Retry` deja de reintentar a los 3 minutos si no pones `maxDuration = 0`.
+  - `@Retry` no deja log entre intentos; se agregó un `BeforeRetryHandler`.
+  - El conector de SmallRye usa `acks=1` por defecto (ver L06-5).
+- **L06-3 ✅ Las réplicas extra son un servicio aparte (`inventory-worker`).** **Preguntaste si tenías que revisar algo.** No; es informativo. Con `--scale inventory=3` y un puerto publicado fijo, Compose no puede darles el mismo puerto a tres contenedores, y con un rango de puertos el puerto cambiaba en cada reinicio. Por eso las réplicas extra viven en un servicio sin puertos que solo consume eventos. El experimento de Competing Consumers funciona igual.
+- **L06-4 ✅ Tests de pedidos con el conector en memoria.** OK, son solo para tests. El consumidor Quarkus nuevo prueba contra un Kafka real (Dev Services).
+- **L06-5 ✅ Prod con un clúster KRaft de 3 nodos.** **Respuesta:** agregarlo como opcional por la RAM, explicando los requisitos. **Hecho:** `compose.prod.yaml` y `smoke-prod.sh`.
+  - **RAM medida:** local ~1,1 GB, prod ~1,8 GB. Requisitos: Docker con ≥ 4 GB asignados y equipo con ≥ 8 GB (16 GB recomendado).
+  - **Experimentos:**
+    - cae 1 nodo y todo sigue;
+    - caen 2 y aparece `NOT_ENOUGH_REPLICAS` con pérdida de quórum;
+    - "el 500 que mintió": el pedido igual se procesa al volver los nodos;
+    - `acks=1` acepta eventos que nadie puede leer.
+  - **Corrección en el código:** pedidos ahora fija `acks=all`, porque el default de SmallRye es `acks=1`.
 
 ### Lab 10 · Observabilidad
 
