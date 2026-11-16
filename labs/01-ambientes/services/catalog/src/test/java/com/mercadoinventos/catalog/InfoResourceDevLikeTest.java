@@ -15,16 +15,16 @@ import static org.hamcrest.Matchers.equalTo;
  * No hay ningún "if (prod)" en la aplicación; solo cambian los valores.
  */
 @QuarkusTest
-@TestProfile(InfoResourceProdLikeTest.ProdLike.class)
-class InfoResourceProdLikeTest {
+@TestProfile(InfoResourceDevLikeTest.DevLike.class)
+class InfoResourceDevLikeTest {
 
-    public static class ProdLike implements QuarkusTestProfile {
+    public static class DevLike implements QuarkusTestProfile {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                "app.environment", "prod",
+                "app.environment", "dev",
                 "app.featured-enabled", "true",
-                "quarkus.log.category.\"com.mercadoinventos\".level", "DEBUG");
+                "quarkus.log.level", "DEBUG");
         }
     }
 
@@ -34,7 +34,7 @@ class InfoResourceProdLikeTest {
             .when().get("/api/info")
             .then()
             .statusCode(200)
-            .body("environment", equalTo("prod"))
+            .body("environment", equalTo("dev"))
             .body("featuredEnabled", equalTo(true))
             .body("logLevel", equalTo("DEBUG"));
     }

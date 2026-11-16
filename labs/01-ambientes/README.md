@@ -7,7 +7,7 @@
 
 | local | prod |
 |---|---|
-| ![El lab en local: cabecera verde, destacados visibles, logs DEBUG](docs/local.png) | ![El lab en prod: cabecera roja, sin destacados, logs JSON, Swagger desactivado](docs/prod.png) |
+| ![El lab en local: cabecera verde, destacados visibles, logs INFO](docs/local.png) | ![El lab en prod: cabecera roja, sin destacados, logs JSON, Swagger desactivado y la demostración de CORS](docs/prod.png) |
 
 ---
 
@@ -79,6 +79,14 @@ flowchart LR
 | dev | Variable que pone quien despliega (en la vida real, el pipeline de CI/CD). `${DB_PASSWORD:?…}` hace que Compose **se niegue** a arrancar si falta | En `docker inspect` |
 | prod | **Archivo** montado en `/run/secrets/…` (`secrets:` de Compose) | Solo dentro del contenedor |
 
+**¿Por qué tres formas distintas y no una?** Porque cada ambiente tiene un riesgo distinto y alguien distinto que entrega el secreto:
+
+- **Local:** la prioridad es que `docker compose up` funcione sin pasos previos. Los valores son falsos y no abren nada real, así que no hay nada que proteger.
+- **Dev:** el secreto lo pone el **pipeline de CI/CD** (GitHub Actions, GitLab CI...), que guarda sus secretos cifrados y los inyecta como variables. `:?` hace que un pipeline mal configurado falle **antes** de arrancar, en lugar de arrancar sin contraseña.
+- **Prod:** una variable de entorno se ve en `docker inspect`, en `/proc/<pid>/environ`, la heredan los procesos hijos y suele terminar en logs de errores. Un archivo montado solo lo lee el proceso que lo necesita, y se puede rotar o traer de un gestor de secretos (Vault, AWS Secrets Manager) sin cambiar la app: la convención `*_FILE` es la misma.
+
+En los tres casos **el código es el mismo**: la app lee `DB_PASSWORD` o `DB_PASSWORD_FILE` y no sabe de dónde vino. Los valores reales nunca están en este repo: viven fuera (el pipeline, un gestor de secretos o un repositorio privado de credenciales).
+
 ## Arquitectura del lab
 
 ```mermaid
@@ -89,13 +97,13 @@ flowchart LR
     C --> DB[("postgres<br/>base catalog")]
 ```
 
-El navegador solo habla con nginx. nginx reenvía `/api/catalog/*` y `/api/inventory/*` a cada servicio por la red interna de Compose. Así el navegador nunca conoce los puertos internos y no hay problemas de CORS.
+El navegador solo habla con nginx. nginx reenvía `/api/catalog/*` y `/api/inventory/*` a cada servicio por la red interna de Compose. Así el navegador nunca conoce los puertos internos y, como todo sale del mismo origen, **no hace falta CORS**. En prod, además, el catálogo se publica como API pública en otro origen, y ahí sí entra CORS (ver [CORS en prod](#cors-en-prod)).
 
 | Ambiente | Proyecto de Compose | Web | catalog | inventory | Postgres |
 |---|---|---|---|---|---|
 | local | `lab01-ambientes` | http://localhost:3000 | :8101 | :8103 | :5432 |
 | dev | `lab01-ambientes-dev` | http://localhost:3100 | :8111 | :8113 | (interno) |
-| prod | `lab01-ambientes-prod` | http://localhost:3200 | (interno) | (interno) | (interno) |
+| prod | `lab01-ambientes-prod` | http://localhost:3200 | :8201 (API pública, con CORS) | (interno) | (interno) |
 
 Cada ambiente es un **proyecto de Compose distinto** (`name:` en cada overlay): tiene sus propios contenedores, red y volúmenes. Por eso los tres pueden correr a la vez sin pisarse los datos.
 
@@ -109,7 +117,7 @@ docker compose up --build -d
 ./smoke.sh
 ```
 
-Abre http://localhost:3000. Deberías ver la cabecera **verde**, la sección de destacados y los logs en `DEBUG`.
+Abre http://localhost:3000. Deberías ver la cabecera **verde**, la sección de destacados y los logs en `INFO`.
 
 `cp .env.example .env` es opcional: sin `.env`, Compose usa los mismos valores por defecto.
 
@@ -121,7 +129,7 @@ DB_PASSWORD=dev-pass SUPPLIER_API_KEY=sk-dev-1234 \
 ./smoke.sh dev
 ```
 
-Abre http://localhost:3100: cabecera **ámbar** y logs en JSON. Los destacados siguen visibles, porque el flag está activo en dev.
+Abre http://localhost:3100: cabecera **ámbar** y logs en JSON y en `DEBUG` (el único ambiente con DEBUG). Los destacados siguen visibles, porque el flag está activo en dev.
 
 ### 3. Prod (reutiliza las imágenes, con secretos en archivos)
 
@@ -132,7 +140,7 @@ docker compose -f compose.yaml -f compose.prod.yaml --env-file .env.prod up -d
 ./smoke.sh prod
 ```
 
-Abre http://localhost:3200: cabecera **roja**, sin destacados y con Swagger desactivado.
+Abre http://localhost:3200: cabecera **roja**, sin destacados, con Swagger desactivado y con la sección **CORS: la API pública**. Abre también http://localhost:3299, el "otro sitio" que intenta leer la misma API.
 
 ### Limpiar
 
@@ -168,12 +176,13 @@ El comando de dev pide `DB_PASSWORD` incluso para bajar el ambiente. Antepón `D
 
 5. **Dev sin variables.** Levanta dev sin `DB_PASSWORD`: verás `required variable DB_PASSWORD is missing a value`. Es el mismo *fail fast*, pero un nivel más arriba, en Compose.
 
-6. **Logs según el ambiente.** Recarga la página en local y en prod, y compara:
+6. **Logs según el ambiente.** Recarga la página en dev y en prod, y compara:
    ```bash
-   docker compose logs catalog
+   DB_PASSWORD=dev-pass SUPPLIER_API_KEY=sk-dev-1234 \
+     docker compose -f compose.yaml -f compose.dev.yaml --env-file .env.dev logs catalog
    docker compose -f compose.yaml -f compose.prod.yaml --env-file .env.prod logs catalog
    ```
-   En local verás `DEBUG ... Listando 4 inventos` en texto. En prod verás JSON, sin la línea DEBUG.
+   En dev verás `"level":"DEBUG"`: la línea `Listando 4 inventos`, pero también el SQL de Hibernate y los detalles internos de Vert.x y de uvicorn. En prod (y en local) solo `INFO`. El nivel aplica a **todo**, no solo a nuestro código: por eso DEBUG queda solo en dev, donde los datos no son reales. En prod, DEBUG puede filtrar datos sensibles (consultas con parámetros, headers) a un sistema de logs al que accede más gente.
 
 7. **Cambiar configuración sin recompilar.** Edita `.env.prod` y pon `FEATURED_ENABLED=true`. Luego aplica el cambio:
    ```bash
@@ -183,18 +192,66 @@ El comando de dev pide `DB_PASSWORD` incluso para bajar el ambiente. Antepón `D
 
 8. **Ambientes cruzados.** Edita `compose.dev.yaml` y haz que el frontend de dev apunte al catálogo de **prod**: es un error real y peligroso. La web muestra el aviso "El frontend corre en dev, pero estos servicios reportan otro ambiente". Pista: los dos proyectos tienen redes distintas, así que primero tendrás que conectarlos. Ese esfuerzo extra también es parte de la lección.
 
+9. **CORS a mano.** Con prod levantado, simula lo que hace el navegador:
+   ```bash
+   curl -si -H 'Origin: http://localhost:3200' localhost:8201/api/info | grep -i access-control
+   curl -si -H 'Origin: http://localhost:3299' localhost:8201/api/info | grep -i access-control
+   ```
+   El primero trae `Access-Control-Allow-Origin`; el segundo responde `403 CORS Rejected - Invalid origin`, sin el header. Ahora agrega `http://localhost:3299` a `CORS_ORIGINS` en `.env.prod` (separado por coma), aplica con `up -d` y recarga http://localhost:3299: el otro sitio ya puede leer. Configuración, sin recompilar.
+
 ## ¿Qué cambia en dev y prod?
 
 | Aspecto | local | dev | prod |
 |---|---|---|---|
 | Imagen | se construye aquí | la de local | la de local |
 | `APP_ENV` | `local` | `dev` | `prod` |
-| Logs | `DEBUG`, texto | `INFO`, JSON | `INFO`, JSON |
+| Logs | `INFO`, texto | **`DEBUG`**, JSON | `INFO`, JSON |
 | Destacados | activado | activado | **desactivado** |
 | Swagger UI | activo | activo | **desactivado** |
 | Secretos | valores falsos por defecto | variables obligatorias (`:?`) | archivos en `/run/secrets` |
-| Puertos expuestos | todos | web y servicios | **solo la web** |
+| Puertos expuestos | todos | web y servicios | **la web y la API pública del catálogo** |
+| CORS | no aplica (un solo origen) | no aplica (un solo origen) | **solo el origen de la web** |
 | Recursos | sin límite | sin límite | 1 CPU, 512 MB, `restart: unless-stopped` |
+
+### CORS en prod
+
+En local y dev, el navegador habla con **un solo origen**: nginx reenvía `/api/*` a los servicios. Sin llamadas entre orígenes, CORS no aplica.
+
+En prod el catálogo **también** se publica como API pública en `http://localhost:8201`, como haría `api.mercado.com` frente a `www.mercado.com`. Cuando la web (`http://localhost:3200`) llama a esa API, el navegador hace una pregunta antes de entregarle la respuesta: *¿esta API permite que `http://localhost:3200` la lea?*
+
+```mermaid
+sequenceDiagram
+    participant W as Web (localhost:3200)
+    participant O as Otro sitio (localhost:3299)
+    participant B as Navegador
+    participant A as API pública (localhost:8201)
+    W->>B: fetch(localhost:8201/api/info)
+    B->>A: GET /api/info · Origin: http://localhost:3200
+    A-->>B: 200 · Access-Control-Allow-Origin: http://localhost:3200
+    B-->>W: ✅ entrega la respuesta
+    O->>B: fetch(localhost:8201/api/info)
+    B->>A: GET /api/info · Origin: http://localhost:3299
+    A-->>B: 403 CORS Rejected (sin Access-Control-Allow-Origin)
+    B--xO: ⛔ bloquea la lectura
+```
+
+La configuración está en [`compose.prod.yaml`](compose.prod.yaml) y [`.env.prod`](.env.prod):
+
+```yaml
+QUARKUS_HTTP_CORS_ENABLED: "true"
+QUARKUS_HTTP_CORS_ORIGINS: ${CORS_ORIGINS}   # http://localhost:3200: una lista explícita, nunca "*"
+```
+
+| Captura | Qué muestra |
+|---|---|
+| ![La web oficial lee la API pública](docs/cors-prod-ok.png) | Desde `localhost:3200`, el botón "Llamar a la API pública" funciona. |
+| ![Otro sitio bloqueado por CORS](docs/cors-otro-sitio.png) | Desde `localhost:3299`, el navegador bloquea la lectura. En DevTools: *No 'Access-Control-Allow-Origin' header is present on the requested resource*. |
+
+Tres cosas que suelen confundirse:
+
+- **CORS no protege la API.** Con `curl` (sin navegador) cualquiera la lee: `curl localhost:8201/api/info`. CORS protege a los **usuarios**: evita que un sitio malicioso abierto en su navegador lea datos de otra API usando su sesión. La autenticación (lab 07) es lo que protege la API.
+- **La petición sí llega al servidor.** Para un `GET` simple, el navegador la envía. Muchos servidores la procesan y solo omiten el header, y es el navegador el que **bloquea la lectura**. Quarkus es más estricto: responde `403 CORS Rejected - Invalid origin` sin ejecutarla. Para métodos con efectos (`POST` con JSON, `PUT`, `DELETE`), el navegador primero hace un *preflight* (`OPTIONS`); si la API no autoriza el origen, la petición real ni se envía.
+- **Nunca `*` con credenciales.** `Access-Control-Allow-Origin: *` deja leer a cualquier sitio; con cookies o tokens, el navegador ni siquiera lo acepta. Una lista explícita por ambiente es la forma correcta, y por eso es **configuración** y no código.
 
 ### Perfiles de Quarkus ≠ ambientes
 

@@ -15,7 +15,7 @@ public class InventionResource {
     @GET
     public List<Invention> list() {
         List<Invention> inventions = Invention.listAll(Sort.by("sku"));
-        // Solo aparece con LOG_LEVEL=DEBUG (local). En dev y prod (INFO) no se ve.
+        // Solo aparece con LOG_LEVEL=DEBUG (dev). En local y prod (INFO) no se ve.
         LOG.debugf("Listando %d inventos", inventions.size());
         return inventions;
     }

@@ -11,6 +11,8 @@
 export interface AppConfig {
   environment: string
   appTitle: string
+  /** URL de la API pública en OTRO origen (solo prod, para la demostración de CORS). Vacío = no hay. */
+  publicApiUrl: string
 }
 
 /** Lo que responde GET /api/info de cada servicio (solo los campos que usa la UI). */
@@ -25,7 +27,7 @@ declare global {
   }
 }
 
-const DEFAULTS: AppConfig = { environment: 'desconocido', appTitle: 'Mercado de Inventos' }
+const DEFAULTS: AppConfig = { environment: 'desconocido', appTitle: 'Mercado de Inventos', publicApiUrl: '' }
 
 export function loadConfig(win: Pick<Window, '__APP_CONFIG__'> = window): AppConfig {
   return { ...DEFAULTS, ...(win.__APP_CONFIG__ ?? {}) }

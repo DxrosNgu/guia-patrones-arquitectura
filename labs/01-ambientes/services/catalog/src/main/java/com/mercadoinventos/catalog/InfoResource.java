@@ -21,7 +21,7 @@ public class InfoResource {
     private final boolean swaggerEnabled;
 
     InfoResource(AppConfig config,
-                 @ConfigProperty(name = "quarkus.log.category.\"com.mercadoinventos\".level") String logLevel,
+                 @ConfigProperty(name = "quarkus.log.level") String logLevel,
                  @ConfigProperty(name = "quarkus.log.console.json.enabled") boolean logJson,
                  @ConfigProperty(name = "quarkus.swagger-ui.enabled") boolean swaggerEnabled) {
         this.config = config;

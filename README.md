@@ -271,7 +271,7 @@ Los tres ambientes se simulan **en tu máquina** con *overlays* de Compose. El o
 | Aspecto | local | dev | prod |
 |---|---|---|---|
 | Imagen | build local | misma imagen, con tag de versión | misma imagen, con tag de versión |
-| Logs | texto legible, `DEBUG` | JSON, `INFO` | JSON, `INFO`/`WARN` |
+| Logs | texto legible, `INFO` | JSON, **`DEBUG`** (solo aquí: puede mostrar datos sensibles) | JSON, `INFO`/`WARN` |
 | Puertos expuestos | todos (BD, Kafka UI, Swagger) | servicios y herramientas | solo gateway y frontend |
 | Secretos | valores falsos por defecto | variables obligatorias que pasa quien despliega | archivos en `secrets/` |
 | Swagger y herramientas | activas | activas | desactivadas |

@@ -31,6 +31,8 @@ def configure_logging(level: str, as_json: bool) -> None:
 
     root = logging.getLogger()
     root.handlers = [handler]
-    root.setLevel(logging.INFO)
-    # El nivel configurable aplica a NUESTRO código; las librerías quedan en INFO.
-    logging.getLogger("inventory").setLevel(level.upper())
+    # El nivel aplica a TODO: nuestro código, uvicorn, SQLAlchemy, httpx...
+    # DEBUG solo en dev: puede mostrar datos sensibles (SQL, headers).
+    root.setLevel(level.upper())
+    for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        logging.getLogger(name).setLevel(level.upper())

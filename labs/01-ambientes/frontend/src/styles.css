@@ -60,6 +60,25 @@ h2 { font-size: 1.1rem; margin: 1.75rem 0 0.5rem; }
   background: rgb(179 38 30 / 0.08);
 }
 
+.ok {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--local);
+  background: rgb(31 138 76 / 0.08);
+}
+
+button {
+  font: inherit;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+code { font-size: 0.9em; }
+
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

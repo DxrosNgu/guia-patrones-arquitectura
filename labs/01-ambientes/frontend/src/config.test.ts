@@ -3,13 +3,13 @@ import { loadConfig, findEnvironmentMismatches } from './config'
 
 describe('loadConfig', () => {
   it('reads the runtime config injected by /config.js', () => {
-    const win = { __APP_CONFIG__: { environment: 'prod', appTitle: 'Mercado' } }
+    const win = { __APP_CONFIG__: { environment: 'prod', appTitle: 'Mercado', publicApiUrl: 'http://api' } }
 
-    expect(loadConfig(win)).toEqual({ environment: 'prod', appTitle: 'Mercado' })
+    expect(loadConfig(win)).toEqual({ environment: 'prod', appTitle: 'Mercado', publicApiUrl: 'http://api' })
   })
 
   it('falls back to safe defaults when /config.js did not load', () => {
-    expect(loadConfig({})).toEqual({ environment: 'desconocido', appTitle: 'Mercado de Inventos' })
+    expect(loadConfig({})).toEqual({ environment: 'desconocido', appTitle: 'Mercado de Inventos', publicApiUrl: '' })
   })
 
   it('fills missing keys with defaults', () => {

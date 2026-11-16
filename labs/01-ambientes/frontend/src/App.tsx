@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { loadConfig, findEnvironmentMismatches, type ServiceInfo } from './config'
 import { fetchJson, withStock, type Invention, type InventionWithStock, type StockLevel } from './catalog'
+import { probePublicApi, type ProbeResult } from './cors'
 
 interface CatalogInfo extends ServiceInfo {
   featuredEnabled: boolean
@@ -19,6 +20,23 @@ const config = loadConfig()
 
 function formatPrice(price = 0, currency = 'PEN') {
   return new Intl.NumberFormat('es-PE', { style: 'currency', currency }).format(price)
+}
+
+function CorsDemo({ apiUrl }: { apiUrl: string }) {
+  const [result, setResult] = useState<ProbeResult | null>(null)
+  return (
+    <section>
+      <h2>🌐 CORS: la API pública</h2>
+      <p className="muted">
+        En prod el catálogo también se publica en <code>{apiUrl}</code>, un origen distinto de esta página (
+        <code>{window.location.origin}</code>). El navegador solo deja leer la respuesta si la API lo autoriza con{' '}
+        <code>Access-Control-Allow-Origin</code>. Prueba lo mismo desde otro sitio en{' '}
+        <a href="http://localhost:3299">http://localhost:3299</a>.
+      </p>
+      <button onClick={() => probePublicApi(apiUrl).then(setResult)}>Llamar a la API pública</button>
+      {result && <p className={result.ok ? 'ok' : 'alert'}>{result.ok ? '✅' : '⛔'} {result.detail}</p>}
+    </section>
+  )
 }
 
 function ServiceCard({ title, info, rows }: { title: string; info: unknown; rows: [string, unknown][] }) {
@@ -112,6 +130,8 @@ export default function App() {
             />
           </div>
         </section>
+
+        {config.publicApiUrl && <CorsDemo apiUrl={config.publicApiUrl} />}
 
         {featured.length > 0 && (
           <section>
