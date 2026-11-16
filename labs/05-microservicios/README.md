@@ -146,6 +146,12 @@ PROD_DB_PASSWORD=una-clave-larga docker compose -f compose.yaml -f compose.prod.
 ./smoke.sh prod
 ```
 
+O con un archivo `.env.prod.secrets` (ignorado por git) que contenga `PROD_DB_PASSWORD=...`:
+
+```bash
+docker compose -f compose.yaml -f compose.prod.yaml --env-file .env.prod.secrets up -d
+```
+
 [`compose.prod.yaml`](compose.prod.yaml) apaga el Postgres compartido, crea `db-orders`, `db-inventory` y `db-payments`, y solo expone `orders` y `report`. Con instancias separadas, el `JOIN` de la versión ingenua **ni siquiera es posible**.
 
 ⚠️ Las tres instancias comparten `PROD_DB_PASSWORD` por simplicidad. En la vida real, cada una tendría su credencial en un gestor de secretos (lab 01).

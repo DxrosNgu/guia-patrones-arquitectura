@@ -129,6 +129,12 @@ DB_PASSWORD=dev-pass SUPPLIER_API_KEY=sk-dev-1234 \
 ./smoke.sh dev
 ```
 
+Si prefieres no escribir los secretos en la terminal, ponlos en un archivo `.env.dev.secrets` (ignorado por git) y pásalo como **segundo** `--env-file`:
+
+```bash
+docker compose -f compose.yaml -f compose.dev.yaml --env-file .env.dev --env-file .env.dev.secrets up -d
+```
+
 Abre http://localhost:3100: cabecera **ámbar** y logs en JSON y en `DEBUG` (el único ambiente con DEBUG). Los destacados siguen visibles, porque el flag está activo en dev.
 
 ### 3. Prod (reutiliza las imágenes, con secretos en archivos)
