@@ -74,6 +74,7 @@ sequenceDiagram
 | Distinguir errores "nunca va a funcionar" de "todavía no" | [`events.py`](services/inventory/app/events.py) (`InvalidEvent` vs. `TransientError`) |
 | Confirmar el offset **después** de procesar | `enable_auto_commit=False` y `consumer.commit()` en [`consumer.py`](services/inventory/app/consumer.py) |
 | Crear los topics con 3 particiones | `kafka-init` en [`compose.yaml`](compose.yaml) |
+| El mismo consumidor escrito con Quarkus, para comparar | [`services/inventory-quarkus`](services/inventory-quarkus) y [`docs/consumidor-aiokafka-vs-quarkus.md`](docs/consumidor-aiokafka-vs-quarkus.md) |
 
 ## Levántalo
 
@@ -87,7 +88,37 @@ docker compose up --build -d
 - Pedidos: http://localhost:8102/q/swagger-ui · Inventario: http://localhost:8103/docs.
 - Peticiones listas en [`requests.http`](requests.http).
 
-Para limpiar: `docker compose --profile scale down -v`.
+Para limpiar: `docker compose --profile scale --profile quarkus down -v`.
+
+### Opcional: el mismo consumidor en Quarkus
+
+El inventario también está escrito con **Quarkus Messaging**, para comparar línea a línea con aiokafka: commit, DLQ y reintentos. Corre en otro grupo de consumidores, así que recibe **todos** los eventos (Publish/Subscribe), con su propio esquema y su propia DLQ.
+
+```bash
+docker compose --profile quarkus up --build -d
+./smoke-quarkus.sh
+```
+
+La comparación completa, con lo que se aprendió al construirlo (por ejemplo, que `@Retry` deja de reintentar a los 3 minutos si no pones `maxDuration = 0`), está en [`docs/consumidor-aiokafka-vs-quarkus.md`](docs/consumidor-aiokafka-vs-quarkus.md).
+
+### Opcional: prod con Kafka de 3 nodos
+
+[`compose.prod.yaml`](compose.prod.yaml) arma un clúster KRaft de **3 nodos**, con topics de replicación 3 y `min.insync.replicas=2`, como en producción.
+
+**Requisitos de RAM.** Medido en reposo: el lab en local usa unos **1,1 GB**; prod con 3 nodos, unos **1,8 GB** (cada nodo de Kafka, 300 a 470 MB, con el heap limitado a 384 MB). Bajo carga, Kafka usa más.
+
+- Docker necesita **al menos 4 GB** asignados. En Docker Desktop, revísalo en *Settings → Resources*: algunos equipos traen 2 GB por defecto, y con eso los nodos de Kafka se reinician sin un error claro.
+- El equipo, **8 GB como mínimo**, y 16 GB si además tienes abiertos el IDE y el navegador.
+- Si no te alcanza, sáltate esta parte: la tabla de "¿Qué cambia en dev y prod?" explica lo mismo sin levantarlo.
+
+```bash
+docker compose up --build -d && docker compose down        # construye las imágenes (prod no compila)
+docker compose -f compose.yaml -f compose.prod.yaml up -d
+./smoke-prod.sh
+docker compose -f compose.yaml -f compose.prod.yaml down -v
+```
+
+Pedidos queda en http://localhost:8202, inventario en http://localhost:8203 y Kafka UI en http://localhost:8290. Los experimentos están en "Rómpelo en prod", más abajo.
 
 ## Rómpelo
 
@@ -133,15 +164,41 @@ Para limpiar: `docker compose --profile scale down -v`.
 - **Dual write:** pedidos guarda en Postgres y **después** publica en Kafka. Si el proceso muere entre las dos operaciones, queda un pedido sin evento. Lo resuelve el lab 15 (Transactional Outbox).
 - **Duplicados:** Kafka entrega *al menos una vez*. Si inventario procesa un mensaje y se cae antes de confirmar el offset, lo vuelve a procesar y reserva **dos veces**. Lo resuelve el lab 12 (Idempotent Consumer).
 
+### Rómpelo en prod (Kafka con 3 nodos)
+
+Con `compose.prod.yaml` levantado:
+
+7. **Cae un nodo: nada se nota.**
+   ```bash
+   docker compose -f compose.yaml -f compose.prod.yaml stop kafka-3
+   ```
+   Haz pedidos: se aceptan y se procesan. Quedan 2 copias (≥ `min.insync.replicas`) y 2 de 3 votos del quórum de controllers. Mira en Kafka UI (http://localhost:8290) cómo el ISR baja de `1,2,3` a dos nodos.
+
+8. **Caen dos nodos: Kafka prefiere no aceptar a perder datos.**
+   ```bash
+   docker compose -f compose.yaml -f compose.prod.yaml stop kafka-2
+   ```
+   - Un pedido tarda 10 s y responde **500**. En los logs de pedidos: `Error: NOT_ENOUGH_REPLICAS`. Con `acks=all`, Kafka exige 2 copias y solo queda 1.
+   - Los comandos de administración (`kafka-topics.sh --describe`) **no responden**: con 1 de 3 votos se perdió el quórum de controllers.
+
+9. **El 500 que mintió.** Vuelve a levantar los nodos (`start kafka-2 kafka-3`) y mira el pedido que respondió 500: **existe** y **se reservó**. Pedidos dejó de esperar a los 10 s, pero el productor de Kafka siguió reintentando por su cuenta (hasta `delivery.timeout.ms`, 2 minutos), y cuando volvieron los nodos, entregó el evento. Un timeout no dice si la operación ocurrió. Si el cliente reintenta, crea un pedido **duplicado**. Por eso existen la Idempotency Key (lab 12) y el Outbox (lab 15).
+
+10. **`acks=1`: aceptado pero invisible.** El conector Kafka de SmallRye usa `acks=1` por defecto (el cliente de Kafka usa `all`). Pedidos lo fija en `all`, pero puedes ver la diferencia:
+    ```bash
+    ORDERS_ACKS=1 docker compose -f compose.yaml -f compose.prod.yaml up -d orders
+    docker compose -f compose.yaml -f compose.prod.yaml stop kafka-2 kafka-3
+    ```
+    Los pedidos responden **202 al instante**, pero inventario **no los procesa**: el evento quedó en una sola copia y los consumidores solo leen lo que está replicado. Si ese último nodo se cae ahora, esos eventos se **pierden**. Al volver los nodos, se replican y se procesan.
+
 ## ¿Qué cambia en dev y prod?
 
-Este lab no trae overlays de ambiente. Para Kafka, los cambios de prod son de configuración del clúster:
+El overlay de prod **opcional** (`compose.prod.yaml`) simula el clúster. Los cambios de prod para Kafka:
 
 | Aspecto | Local (este lab) | Prod |
 |---|---|---|
-| Brokers | 1 | ≥ 3, en zonas distintas |
+| Brokers | 1 | ≥ 3, en zonas distintas (el overlay opcional levanta 3) |
 | Replicación de topics | 1 | 3, con `min.insync.replicas=2` |
-| Confirmación del productor | la del cliente (en Java, `acks=all` por defecto desde Kafka 3.0; en aiokafka, `acks=1`) | `acks=all` explícito + `enable.idempotence=true` en todos los clientes |
+| Confirmación del productor | depende del cliente: el cliente Java de Kafka usa `acks=all` desde 3.0, pero el conector de **SmallRye (Quarkus) usa `acks=1`**, igual que aiokafka. Este lab fija `acks=all` en pedidos | `acks=all` **explícito** + `enable.idempotence=true` en todos los clientes. No confíes en el default |
 | Particiones | 3 | Según el paralelismo que necesites. Aumentarlas después **cambia** a qué partición va cada key |
 | Creación de topics | `kafka-init` + `auto.create.topics.enable=true` | Solo desde infraestructura como código. Autocreación **apagada** |
 | DLQ | se mira a mano | Alerta cuando llega cualquier mensaje + proceso para reinyectarlos |

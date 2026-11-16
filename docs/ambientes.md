@@ -66,7 +66,7 @@ docker compose -f compose.yaml -f compose.prod.yaml --env-file .env.prod config
 | Swagger UI | activo | activo | desactivado |
 | Secretos | falsos, por defecto | variables obligatorias | archivos |
 | Recursos | sin límite | sin límite | límites y `restart: unless-stopped` |
-| Kafka (labs con Kafka) | 1 broker, replicación 1 | 1 broker | ⚠️ en la vida real son ≥ 3 brokers con replicación 3. Aquí se explica, pero no se simula |
+| Kafka (labs con Kafka) | 1 broker, replicación 1 | 1 broker | ≥ 3 brokers con replicación 3 y `min.insync.replicas=2`. El lab 06 lo simula con un overlay **opcional** (pide ~1,8 GB de RAM) |
 | Bases de datos | un contenedor, una base por servicio | igual | ⚠️ en la vida real, instancias separadas y administradas |
 
 ## Lo que la guía simplifica (y la vida real no)
