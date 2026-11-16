@@ -105,10 +105,18 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 
 ### Lab 10 · Observabilidad
 
-- **L10-1 🟡 Sin gateway ni frontend en la traza.** El plan decía "de React a Kafka", pero el gateway es del lab 07 y todavía no existe. La traza empieza en `orders`. Cuando exista el lab 07, se puede sumar.
-- **L10-2 🟢 Pedidos consulta el stock por HTTP antes de publicar.** Así la traza tiene HTTP **y** Kafka. Es un híbrido común en la vida real (validación rápida + procesamiento asíncrono).
-- **L10-3 🟢 En Python, la telemetría se configura a mano** (sin `opentelemetry-instrument`) y el contexto de Kafka se extrae explícitamente. Así se ve cómo funciona la propagación.
-- **L10-4 🟢 SQLAlchemy 2.0.57 en este lab:** la instrumentación de OpenTelemetry (0.66b2) todavía no soporta 2.1. Los demás labs siguen en 2.1.
+- **L10-1 🟡 Sin gateway ni frontend en la traza.** **Pediste más detalle.** Hoy la traza **empieza en `orders`**: el primer span es `POST /api/orders`, porque la petición la hace `curl` o `requests.http` directamente. El plan original decía "de React al gateway, a pedidos, a Kafka, a inventario", pero el gateway (lab 07) y el frontend de ese flujo todavía no existen.
+  - Mira la captura `labs/10-observabilidad/docs/traza.png`: arriba de todo está `orders POST /api/orders`, sin nada antes.
+  - Cuando exista el lab 07, se puede sumar el gateway: Spring Cloud Gateway propaga el `traceparent` y la traza empezaría un nivel más arriba.
+  - **Pendiente:** extender el lab 10 cuando exista el lab 07.
+- **L10-2 ✅ Pedidos consulta el stock por HTTP antes de publicar.** Lo vas a revisar.
+- **L10-3 ✅ En Python la telemetría se configura a mano.** **Respuesta:** hacer un ejemplo con Quarkus (o Spring si no lo soporta) y una comparativa en un `.md`. **Hecho:** Quarkus lo soporta. Pedidos ahora tiene:
+  - un span con `@WithSpan` (`orders.check-stock`, en `StockCheck`);
+  - un span creado con el `Tracer` (`orders.save-and-publish`, con `Scope`, evento y manejo de errores);
+  - una métrica de negocio con el `Meter` (`orders_placed_total{result}`).
+
+  Hay tests con un exportador en memoria, chequeos en `smoke.sh` y una captura nueva. La comparativa está en [`docs/instrumentacion-manual-vs-automatica.md`](labs/10-observabilidad/docs/instrumentacion-manual-vs-automatica.md): Python a mano, Python con `opentelemetry-instrument`, Quarkus, y una tabla de Spring Boot. También bajé la exportación de métricas de Quarkus de 60 s a 10 s.
+- **L10-4 ✅ SQLAlchemy 2.0.57 en este lab.** **Respuesta:** dejarlo como actualización futura. Ya está en [`docs/actualizaciones-futuras.md`](docs/actualizaciones-futuras.md).
 
 ### Lab 12 · Idempotencia
 
