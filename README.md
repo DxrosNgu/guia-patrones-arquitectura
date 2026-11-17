@@ -340,7 +340,7 @@ flowchart TD
 | [18](labs/18-event-sourcing/) | Event Sourcing | El estado actual pierde la historia | Monedero cuyo saldo se deriva de eventos | Quarkus | — | ✅ |
 | [19](labs/19-anti-corruption-layer/) | Anti-Corruption Layer | El modelo de un legado contamina el tuyo | Integración con un transportista legado (XML) | FastAPI | — | ✅ |
 | [20](labs/20-strangler-fig/) | Strangler Fig | Reescribir todo de una vez falla | Migrar la tienda legada ruta por ruta | Spring Cloud Gateway · Quarkus · FastAPI | — | ✅ |
-| 21 | Micro-frontends | Un frontend, varios equipos | Shell más remotos de catálogo y pedidos | React | — | 🗓️ |
+| [21](labs/21-micro-frontends/) | Micro-frontends | Un frontend, varios equipos | Shell más remotos de catálogo y pedidos | React | — | ✅ |
 | 22 | Proyecto integrador | Decidir qué patrón usar dónde | Todo junto en los 3 ambientes | Todos | Todo | 🗓️ |
 
 PostgreSQL está en todos los labs, así que no figura en la columna *Infra extra*.
@@ -696,6 +696,8 @@ Una saga no se aprende solo con el camino feliz. Estos son los casos que reprodu
 ### Módulo 7 · Frontend
 
 #### 21 · Micro-frontends
+
+✅ [Ir al lab](labs/21-micro-frontends/)
 
 - **Patrones:** Micro-frontends · Module Federation · Shell (App Host).
 - **Problema:** un frontend monolítico en el que trabajan varios equipos acopla los despliegues de todos.

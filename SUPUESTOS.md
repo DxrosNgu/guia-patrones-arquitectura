@@ -238,3 +238,12 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 - **L20-5 🟡 El estado de la migración vive en la memoria del gateway**, sin autenticación (⚠️ en el README). Con varias réplicas del gateway no serviría.
   **Pregunta:** ¿quieres que el estado salga de Consul KV o de un archivo de configuración con refresco, para mostrar cómo se haría con varias réplicas?
 - **L20-6 🟢 Sin frontend**: el catálogo nombraba gateway, Quarkus y FastAPI. Lo que se migra se ve con las cabeceras `X-Route` y `X-Served-By`.
+
+### Lab 21 · Micro-frontends
+
+- **L21-1 🟢 `@module-federation/vite` 1.24.1**, el plugin oficial de Module Federation para Vite (compatible con Vite 8). El de OriginJS quedó atrás.
+- **L21-2 🟢 Un paquete local `@mercado/platform`** con el design system y el contrato de eventos, compartido como singleton. En una empresa sería un paquete versionado en un registro privado; aquí entra a cada imagen con `additional_contexts`, como `shared/`.
+- **L21-3 🟢 El shell sirve los remotos por su nginx** (`/remotes/<equipo>/`): mismo origen, sin CORS. En prod lo haría un CDN o un ingress.
+- **L21-4 🟢 Sin backend:** los productos, el carrito y los pedidos viven en el navegador. El lab trata de la composición de la interfaz; el README dice que cada remoto usaría el BFF de su equipo (lab 09).
+- **L21-5 🟢 La "versión nueva" de pedidos es un argumento de build** (`ORDERS_VERSION=2` agrega "Repetir pedido"). Así el despliegue independiente y el rollback se prueban sin editar código.
+- **L21-6 🟢 El smoke prueba por HTTP** (rutas, caché, remotos caídos). Lo del navegador (React una sola vez, eventos, fallback, despliegue de la v2, el experimento sin singleton) lo verifiqué con Playwright y quedó en capturas. No agregué Playwright como dependencia del lab.

@@ -1,0 +1,4 @@
+# Ambiente LOCAL (Compose lo carga solo). El navegador solo habla con el shell.
+services:
+  shell:
+    ports: ["3000:80"]

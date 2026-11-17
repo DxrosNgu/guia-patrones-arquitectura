@@ -1,0 +1,9 @@
+/* Solo el MARCO de la página. Los colores y los componentes vienen del design system (@mercado/platform). */
+.shell-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  padding: 0.8rem 1rem; background: var(--mi-accent); }
+.shell-header a { color: var(--mi-accent-text); text-decoration: none; }
+.shell-header .brand { font-weight: 700; font-size: 1.15rem; }
+.shell-header nav { display: flex; gap: 1.1rem; align-items: center; }
+.shell-header nav a[aria-current='page'] { text-decoration: underline; text-underline-offset: 4px; }
+.shell-main { padding: 1rem; max-width: 1100px; margin: 0 auto; min-height: 60vh; }
+.shell-footer { padding: 1rem; text-align: center; font-size: 0.8rem; }

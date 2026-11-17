@@ -1,0 +1,37 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Lab 21 · Micro-frontends con Module Federation
+#
+#   docker compose up --build -d                                   → http://localhost:3000
+#   ORDERS_VERSION=2 docker compose up -d --build orders-mfe       → despliega SOLO el remoto de pedidos v2
+#   docker compose stop catalog-mfe                                → el shell sigue; el catálogo muestra un aviso
+#
+#   navegador ─▶ shell (nginx) ─┬─ /            → la página del shell
+#                               ├─ /remotes/catalog/ → catalog-mfe (equipo Catálogo)
+#                               └─ /remotes/orders/  → orders-mfe  (equipo Pedidos)
+# ─────────────────────────────────────────────────────────────────────────
+name: lab21-micro-frontends
+
+x-platform: &platform
+  platform: ./frontend/platform   # design system + contrato de eventos, compartido por los tres
+
+services:
+  # Ojo: el shell NO depende de los remotos. Arranca aunque estén caídos: así se despliegan por separado.
+  shell:
+    build:
+      context: ./frontend/shell
+      additional_contexts: *platform
+    image: mercado/lab21-shell:1.0.0
+
+  catalog-mfe:
+    build:
+      context: ./frontend/catalog
+      additional_contexts: *platform
+    image: mercado/lab21-catalog-mfe:1.0.0
+
+  orders-mfe:
+    build:
+      context: ./frontend/orders
+      additional_contexts: *platform
+      args:
+        ORDERS_VERSION: ${ORDERS_VERSION:-1}
+    image: mercado/lab21-orders-mfe:${ORDERS_VERSION:-1}.0.0

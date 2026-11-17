@@ -1,0 +1,46 @@
+/* Design system del Mercado de Inventos: los TOKENS. Todos los equipos usan estas variables,
+   así el shell, el catálogo y pedidos se ven como una sola aplicación. */
+:root {
+  --mi-bg: #f5f6f8;
+  --mi-surface: #ffffff;
+  --mi-text: #1c2230;
+  --mi-muted: #5f6878;
+  --mi-border: #dde1e8;
+  --mi-accent: #00695c;
+  --mi-accent-text: #ffffff;
+  --mi-warn-bg: #fff4e0;
+  --mi-warn-border: #e0a040;
+  --mi-radius: 10px;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--mi-text);
+  background: var(--mi-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --mi-bg: #12151b;
+    --mi-surface: #1b2029;
+    --mi-text: #e7eaf0;
+    --mi-muted: #9aa3b2;
+    --mi-border: #2c3340;
+    --mi-accent: #26a69a;
+    --mi-accent-text: #0b1f1c;
+    --mi-warn-bg: #3a2c12;
+    --mi-warn-border: #a6782a;
+  }
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--mi-bg); }
+
+.mi-card { background: var(--mi-surface); border: 1px solid var(--mi-border); border-radius: var(--mi-radius); padding: 0.9rem 1rem; }
+.mi-button { font: inherit; padding: 0.45rem 0.9rem; border-radius: 8px; border: 1px solid var(--mi-border);
+  background: var(--mi-surface); color: var(--mi-text); cursor: pointer; }
+.mi-button:disabled { opacity: 0.5; cursor: default; }
+.mi-button--primary { background: var(--mi-accent); color: var(--mi-accent-text); border-color: var(--mi-accent); }
+.mi-badge { display: inline-block; min-width: 1.4rem; padding: 0.05rem 0.45rem; border-radius: 999px; text-align: center;
+  font-size: 0.8rem; font-weight: 600; background: var(--mi-surface); color: var(--mi-text); border: 1px solid var(--mi-border); }
+.mi-muted { color: var(--mi-muted); }
+.mi-notice { padding: 0.7rem 0.9rem; border-radius: 8px; border: 1px solid var(--mi-warn-border); background: var(--mi-warn-bg); }
+input.mi-input { font: inherit; padding: 0.45rem 0.7rem; border-radius: 8px; border: 1px solid var(--mi-border);
+  background: var(--mi-surface); color: var(--mi-text); }
