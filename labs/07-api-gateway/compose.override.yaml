@@ -1,0 +1,12 @@
+# Ambiente LOCAL (Compose lo carga solo).
+# Los servicios también se publican para poder llamarlos SIN pasar por el gateway
+# (experimento de defensa en profundidad). En prod solo se expondría el gateway.
+services:
+  gateway:
+    ports: ["8080:8080"]
+  keycloak:
+    ports: ["8180:8080"]
+  catalog:
+    ports: ["8101:8080"]
+  orders:
+    ports: ["8102:8080"]

@@ -1,0 +1,79 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Lab 07 · API Gateway
+#
+#   Cliente ──► gateway :8080 ──► catalog (público)
+#                 │   │      └──► orders  (JWT + rol buyer; lo valida otra vez)
+#                 │   └── Redis: rate limiting por usuario
+#                 └────── Keycloak :8180: emite y firma los tokens
+#
+#   docker compose up --build -d
+#   ./token.sh ana        → un token de ana para probar a mano
+# ─────────────────────────────────────────────────────────────────────────
+name: lab07-api-gateway
+
+include:
+  - ../../infra/redis.yaml
+
+x-oidc: &oidc
+  # Cómo llega este contenedor a Keycloak (red interna)...
+  OIDC_SERVER_URL: http://keycloak:8080/realms/mercado
+  # ...y el "iss" que viene dentro del token (la URL pública con la que se pidió).
+  OIDC_ISSUER: http://localhost:8180/realms/mercado
+
+services:
+  keycloak:
+    image: keycloak/keycloak:26.8.2
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HTTP_PORT: "8080"
+      # Los tokens SIEMPRE salen con iss=http://localhost:8180/realms/mercado, aunque se pidan
+      # por la red interna. Así gateway y servicios validan contra un único emisor.
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./keycloak/mercado-realm.json:/opt/keycloak/data/import/mercado-realm.json:ro
+    healthcheck:
+      # La imagen no trae curl: se habla HTTP "a mano" con /dev/tcp de bash.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+
+  catalog:
+    build: ./services/catalog
+    image: mercado/lab07-catalog:1.0.0
+
+  orders:
+    build: ./services/orders
+    image: mercado/lab07-orders:1.0.0
+    environment:
+      <<: *oidc
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  gateway:
+    build: ./gateway
+    image: mercado/lab07-gateway:1.0.0
+    environment:
+      CATALOG_URL: http://catalog:8080
+      ORDERS_URL: http://orders:8080
+      JWK_SET_URI: http://keycloak:8080/realms/mercado/protocol/openid-connect/certs
+      JWT_ISSUER: http://localhost:8180/realms/mercado
+      REDIS_HOST: redis
+      RATE_LIMIT_REPLENISH: ${RATE_LIMIT_REPLENISH:-2}
+      RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-5}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+    depends_on:
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      catalog:
+        condition: service_healthy
+      orders:
+        condition: service_healthy

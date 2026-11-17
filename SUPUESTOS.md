@@ -105,6 +105,17 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
     - `acks=1` acepta eventos que nadie puede leer.
   - **Corrección en el código:** pedidos ahora fija `acks=all`, porque el default de SmallRye es `acks=1`.
 
+### Lab 07 · API Gateway
+
+- **L07-1 🟡 Spring Boot 4.0.9 + Spring Cloud 2025.1.4**, no 4.1. Spring Boot 4.1.2 ya es estable, pero Spring Cloud 2026.0 (el que lo soporta) está en RC2, y pediste solo releases. Quedó anotado en `docs/actualizaciones-futuras.md`.
+- **L07-2 🟢 Keycloak vive dentro del lab**, no en `infra/`: solo lo usa este lab por ahora. Si otro lab lo necesita (por ejemplo, el integrador), se mueve a `infra/`.
+- **L07-3 🟢 Catálogo y pedidos guardan en memoria, sin Postgres.** El lab es sobre el borde (rutas, tokens, límites), no sobre persistencia. Así arranca más rápido y con menos RAM.
+- **L07-4 🟢 El catálogo es público y no usa OIDC**; pedidos sí, y valida el token **otra vez** (defensa en profundidad). Así se ve que no todo detrás del gateway necesita autenticación.
+- **L07-5 🟡 Tokens con el flujo *password*** (`token.sh`), porque es cómodo desde la terminal. Está marcado con ⚠️: una web real usa Authorization Code + PKCE. Cuando exista un frontend con login (labs 09 o 21), puede mostrarse el flujo real.
+- **L07-6 🟢 CORS se configura en Spring Security** del gateway, y no en el `globalcors` de Spring Cloud Gateway: la seguridad corre antes que el gateway, así que el *preflight* necesita resolverse ahí.
+- **L07-7 🟢 Con un servicio caído, el gateway responde `500`** (no `503`) y sin *fallback*. Lo dejé así a propósito: el circuit breaker y el *fallback* son del lab 11.
+- **L07-8 🟢 Los servicios exponen sus puertos en local** (8101 y 8102) solo para el experimento de "saltarse el gateway". En prod solo se expondría el gateway.
+
 ### Lab 10 · Observabilidad
 
 - **L10-1 🟡 Sin gateway ni frontend en la traza.** **Pediste más detalle.** Hoy la traza **empieza en `orders`**: el primer span es `POST /api/orders`, porque la petición la hace `curl` o `requests.http` directamente. El plan original decía "de React al gateway, a pedidos, a Kafka, a inventario", pero el gateway (lab 07) y el frontend de ese flujo todavía no existen.

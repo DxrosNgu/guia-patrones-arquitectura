@@ -1,0 +1,41 @@
+{
+  "realm": "mercado",
+  "enabled": true,
+  "accessTokenLifespan": 600,
+  "roles": {
+    "realm": [
+      { "name": "buyer", "description": "Puede hacer pedidos" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "web",
+      "name": "Mercado de Inventos (web)",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"]
+    }
+  ],
+  "users": [
+    {
+      "username": "ana", "enabled": true, "emailVerified": true,
+      "firstName": "Ana", "lastName": "Inventora", "email": "ana@mercado.test",
+      "credentials": [{ "type": "password", "value": "ana", "temporary": false }],
+      "realmRoles": ["buyer", "default-roles-mercado"]
+    },
+    {
+      "username": "carla", "enabled": true, "emailVerified": true,
+      "firstName": "Carla", "lastName": "Compradora", "email": "carla@mercado.test",
+      "credentials": [{ "type": "password", "value": "carla", "temporary": false }],
+      "realmRoles": ["buyer", "default-roles-mercado"]
+    },
+    {
+      "username": "beto", "enabled": true, "emailVerified": true,
+      "firstName": "Beto", "lastName": "Curioso", "email": "beto@mercado.test",
+      "credentials": [{ "type": "password", "value": "beto", "temporary": false }],
+      "realmRoles": ["default-roles-mercado"]
+    }
+  ]
+}

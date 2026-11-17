@@ -326,7 +326,7 @@ flowchart TD
 | [04](labs/04-monolito-modular/) | Monolito modular | Microservicios prematuros vs. *big ball of mud* | La tienda completa en un deployable con módulos verificados | Quarkus | — | ✅ |
 | [05](labs/05-microservicios/) | Microservicios · Database per Service | Equipos y despliegues acoplados por una BD compartida | Separar pedidos, inventario y pagos | Quarkus · FastAPI | — | ✅ |
 | [06](labs/06-sync-vs-async/) | Messaging · Pub/Sub · Competing Consumers · Dead Letter Channel | Acoplamiento temporal: si uno cae, caen todos | Confirmar un pedido: REST vs. evento | Quarkus · FastAPI | Kafka | ✅ |
-| 07 | API Gateway · Access Token · Rate Limiting | El frontend conoce N servicios; auth repetida | Punto de entrada único con JWT y límite por usuario | Spring Cloud Gateway · Quarkus | Keycloak · Redis | 🗓️ |
+| [07](labs/07-api-gateway/) | API Gateway · Access Token · Rate Limiting | El frontend conoce N servicios; auth repetida | Punto de entrada único con JWT y límite por usuario | Spring Cloud Gateway · Quarkus | Keycloak · Redis | ✅ |
 | 08 | Service Registry · Client/Server-side Discovery | Instancias dinámicas | Pedidos encuentra las instancias de inventario | Quarkus (Stork) · FastAPI | Consul | 🗓️ |
 | 09 | BFF · API Composition | Una pantalla necesita datos de N servicios | "Mis pedidos" en la web | FastAPI · React | — | 🗓️ |
 | [10](labs/10-observabilidad/) | Health Check API · Distributed Tracing · Log Aggregation · Metrics | No se ve dónde falla una petición distribuida | Seguir un pedido de orders a inventory pasando por Kafka | Quarkus · FastAPI | Grafana LGTM · Kafka | ✅ |
@@ -446,6 +446,8 @@ PostgreSQL está en todos los labs, así que no figura en la columna *Infra extr
 - **Stack:** Quarkus Messaging (Kafka) en Java, y un cliente Kafka para FastAPI (FastStream o aiokafka).
 
 #### 07 · API Gateway
+
+✅ [Ir al lab](labs/07-api-gateway/)
 
 - **Patrones:** API Gateway · Access Token · Rate Limiting · Gateway Offloading.
 - **Problema:** el frontend conoce la URL de cada servicio, y cada servicio repite la autenticación, la configuración de CORS y los límites.

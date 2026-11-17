@@ -1,0 +1,33 @@
+### Lab 07 · API Gateway
+### Primero pide un token: ./token.sh ana   (o carla / beto) y pégalo abajo.
+@gw = http://localhost:8080
+@token = PEGA_AQUI_EL_TOKEN
+
+### Catálogo: público, sin token
+GET {{gw}}/api/catalog/inventions
+
+### Pedidos sin token → 401
+GET {{gw}}/api/orders
+
+### Comprar con token (ana o carla: rol buyer → 201; beto → 403)
+POST {{gw}}/api/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"items": [{"sku": "INV-001", "quantity": 1}]}
+
+### Mis pedidos (cada usuario ve solo los suyos)
+GET {{gw}}/api/orders
+Authorization: Bearer {{token}}
+
+### Saltarse el gateway: orders directo, sin token → 401 igual
+GET http://localhost:8102/api/orders
+
+### Las rutas activas del gateway
+GET {{gw}}/actuator/gateway/routes
+
+### Un token a mano (flujo password, solo para el lab)
+POST http://localhost:8180/realms/mercado/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+client_id=web&grant_type=password&username=ana&password=ana
