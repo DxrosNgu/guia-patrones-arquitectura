@@ -208,3 +208,13 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 - **L17-3 🟡 Temporal no está implementado:** solo aparece en el README como alternativa y ejercicio avanzado.
   **Pregunta:** ¿quieres una variante con Temporal?
 - **L17-4 ✅ Frontends en TypeScript** (tu respuesta S-06): los de los labs 01, 16 y 17 ya están migrados.
+
+### Lab 18 · Event Sourcing
+
+- **L18-1 🟢 El event store es una tabla de Postgres escrita a mano**, con JDBC directo (sin Hibernate ni librerías de Event Sourcing), para que se vea cada SQL. El README nombra KurrentDB, Axon y Marten como alternativas.
+- **L18-2 🟢 Los datos de ejemplo traen depósitos en formato v1** (`amountCents`), escritos por la migración. Así el upcaster trabaja con eventos reales desde el primer `docker compose up`, y el ejercicio es escribir otro (v1 → v2 de `FundsWithdrawn`).
+- **L18-3 🟢 El proyector filtra por id de transacción (`xid8` + `pg_snapshot_xmin`)**, no solo por posición. Con la posición sola, un evento que confirma tarde se pierde. Hay un test que lo reproduce, y comprobé que falla con la consulta ingenua.
+- **L18-4 🟢 El proyector corre dentro del servicio, cada 1 s** (el scheduler de Quarkus no acepta menos). Con varias réplicas habría que elegir una sola activa; el README lo explica.
+- **L18-5 🟢 `PUT /admin/think-time` abre una ventana entre leer y guardar** para que la concurrencia se vea siempre igual (en el smoke y en los tests). Sin ella, dos peticiones de curl casi nunca se cruzan.
+- **L18-6 🟢 Sin frontend**: el catálogo decía solo Quarkus. La historia se ve con `GET /events`.
+- **L18-7 🟢 Jackson lee los decimales como `BigDecimal`** (`USE_BIG_DECIMAL_FOR_FLOATS` y nodos exactos). Sin eso, 500.00 se convierte en 5E+2 o en un `double`.
