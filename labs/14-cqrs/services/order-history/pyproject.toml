@@ -1,0 +1,27 @@
+[project]
+name = "order-history"
+version = "1.0.0"
+description = "Mercado de Inventos · 14-cqrs · lado de consultas (proyección + API)"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi==0.163.1",
+    "uvicorn==0.54.0",
+    "pydantic-settings==2.16.3",
+    "pymongo==4.20.0",
+    "aiokafka==0.15.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.2.0",
+    "httpx2==2.16.1",
+    "testcontainers[mongodb]==4.15.0",
+]
+
+[tool.uv]
+# Es una aplicación, no una librería: uv no la instala como paquete.
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

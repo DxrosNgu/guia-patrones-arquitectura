@@ -1,0 +1,34 @@
+### Lab 14 · CQRS
+@orders = http://localhost:8102
+@history = http://localhost:8108
+
+### COMANDO: crear un pedido (responde id y version)
+# @name placed
+POST {{orders}}/api/orders
+Content-Type: application/json
+
+{"customerId": "ana", "items": [{"sku": "INV-001", "quantity": 2}, {"sku": "INV-004", "quantity": 1}]}
+
+### CONSULTA inmediata: 404 NOT_YET_PROJECTED (la vista va atrasada)
+GET {{history}}/api/history/{{placed.response.body.id}}
+
+### Read-your-writes: espera hasta que la vista tenga esa versión (máx. 8 s)
+GET {{history}}/api/history/{{placed.response.body.id}}?minVersion={{placed.response.body.version}}&waitMs=8000
+
+### Historial de ana
+GET {{history}}/api/history?customerId=ana
+
+### Solo los enviados
+GET {{history}}/api/history?customerId=ana&status=ENVIADO
+
+### Búsqueda por texto (sin distinguir mayúsculas)
+GET {{history}}/api/history?customerId=ana&q=TAZA
+
+### Estado de la vista: documentos, eventos aplicados, último aplicado, versión de la proyección
+GET {{history}}/api/history/status
+
+### Producto inexistente → 422
+POST {{orders}}/api/orders
+Content-Type: application/json
+
+{"customerId": "ana", "items": [{"sku": "NOPE", "quantity": 1}]}
