@@ -4,9 +4,9 @@ La guía usa **solo versiones estables** (releases). Cuando salga la versión fi
 
 | Componente | Versión actual en la guía | Pendiente | Cuándo actualizar | Qué cambiar |
 |---|---|---|---|---|
-| **Quarkus** | 3.40.1 | Quarkus 4.0 (hoy en *CR1*) | Cuando salga 4.0.0 **final** | `quarkus.platform.version` en cada `pom.xml`. Revisar la guía de migración (cambios de nombres de extensiones y de propiedades) |
-| **Spring Boot** (gateway, labs 07 y 20) | 4.0.x | Spring Boot 4.1 | Cuando el release train de Spring Cloud que lo soporta (2026.0) sea final | `spring-boot-starter-parent` y `spring-cloud.version` en el `pom.xml` del gateway |
-| **Spring Cloud** | 2025.1.x | 2026.0 (hoy en RC) | Cuando salga 2026.0.0 final | `spring-cloud.version` |
+| **Quarkus** | 3.40.1 | Quarkus 4.0 (al 17-11-2026, en *CR1*) | Cuando salga 4.0.0 **final** | `quarkus.platform.version` en cada `pom.xml`. Revisar la guía de migración (cambios de nombres de extensiones y de propiedades) |
+| **Spring Boot** (gateway, labs 07 y 20) | 4.0.9 | Spring Boot 4.1 (4.1.2 ya es estable) | Cuando el release train de Spring Cloud que lo soporta (2026.0) sea final: Spring Cloud 2025.1 solo soporta Boot 4.0 | `spring-boot-starter-parent` y `spring-cloud.version` en el `pom.xml` del gateway |
+| **Spring Cloud** | 2025.1.4 | 2026.0 (al 17-11-2026, en RC2) | Cuando salga 2026.0.0 final | `spring-cloud.version` |
 | **SQLAlchemy** (lab 10) | 2.0.57 | 2.1.x | Cuando `opentelemetry-instrumentation-sqlalchemy` soporte 2.1 | `pyproject.toml` del inventario del lab 10 |
 
 ## Cómo actualizar sin romper nada

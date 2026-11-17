@@ -1,0 +1,65 @@
+# ─────────────────────────────────────────────────────────────────────────
+# API Gateway · lab 07
+#
+# Un solo punto de entrada. Cada ruta dice: qué peticiones atiende (predicates),
+# a qué servicio las manda (uri) y qué les hace por el camino (filters).
+# ─────────────────────────────────────────────────────────────────────────
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+
+  # Valida los JWT que emite Keycloak. Dos URLs del MISMO Keycloak, a propósito:
+  #  - jwk-set-uri: de dónde descargar las claves públicas (red interna: keycloak:8080).
+  #  - issuer-uri:  el "iss" que trae el token (la URL pública: localhost:8180). Si no coincide → 401.
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8180/realms/mercado/protocol/openid-connect/certs}
+          issuer-uri: ${JWT_ISSUER:http://localhost:8180/realms/mercado}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: catalog
+              uri: ${CATALOG_URL:http://localhost:8101}
+              predicates:
+                - Path=/api/catalog/**
+
+            - id: orders
+              uri: ${ORDERS_URL:http://localhost:8102}
+              predicates:
+                - Path=/api/orders/**
+              filters:
+                # Rate limiting por usuario (token bucket en Redis): se rellenan "replenishRate"
+                # fichas por segundo, hasta "burstCapacity". Sin ficha → 429 Too Many Requests.
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH:2}
+                    redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST:5}
+                    redis-rate-limiter.requestedTokens: 1
+                    # El nombre del usuario autenticado (preferred_username): cada uno tiene su balde.
+                    key-resolver: "#{@principalNameKeyResolver}"
+
+gateway:
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,gateway
+  endpoint:
+    gateway:
+      access: read-only
