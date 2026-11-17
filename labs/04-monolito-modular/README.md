@@ -166,7 +166,36 @@ Este lab no trae overlays de ambiente. Lo que importa entre ambientes:
 ## Costo y cuándo NO usarlo
 
 - **La disciplina cuesta.** Separar `api`/`internal`, evitar FKs cruzadas y pasar por interfaces es más trabajo que llamar al repositorio de otro módulo.
-- **⚠️ Un solo usuario de base de datos** para todos los esquemas. ArchUnit protege el código Java, no el SQL (experimento 5). Para blindarlo hace falta un usuario por esquema y un datasource por módulo... y entonces pierdes la transacción única, que es la gracia del monolito. Es un intercambio real.
+- **⚠️ Un solo usuario de base de datos** para todos los esquemas. ArchUnit protege el código Java, no el SQL (experimento 5). Ver "Un usuario o un usuario por módulo", abajo.
+
+### Un usuario o un usuario por módulo
+
+El ⚠️ de arriba marca una decisión con un costo aceptado a propósito. Las dos opciones, lado a lado:
+
+```mermaid
+flowchart TB
+    subgraph A["Este lab: UN usuario (shop)"]
+        direction LR
+        CA["catalog"] & OA["orders"] & IA["inventory"] --> UA(("usuario<br/>shop"))
+        UA --> SA1[("esquema<br/>catalog")] & SA2[("esquema<br/>orders")] & SA3[("esquema<br/>inventory")]
+    end
+    subgraph B["Alternativa: un usuario POR módulo"]
+        direction LR
+        CB["catalog"] --> UB1(("catalog_user")) --> SB1[("esquema<br/>catalog")]
+        OB["orders"] --> UB2(("orders_user")) --> SB2[("esquema<br/>orders")]
+        IB["inventory"] --> UB3(("inventory_user")) --> SB3[("esquema<br/>inventory")]
+    end
+```
+
+| | Un usuario (este lab) | Un usuario por módulo |
+|---|---|---|
+| Quién protege los límites | ArchUnit (el código Java) y la disciplina del equipo | La **base**: `orders_user` no tiene permiso sobre `inventory`, y un `SELECT` cruzado falla |
+| SQL nativo que cruza esquemas | Pasa sin que nadie se entere (experimento 5) | Error de permisos en el primer intento |
+| Una compra = una transacción | **Sí**: un datasource, una conexión, un `COMMIT` | No: un datasource por módulo, y una compra toca tres. Habría que coordinar (XA) o pasar a consistencia eventual, como entre microservicios |
+| Configuración | Un datasource | Un datasource por módulo, cada uno con su pool de conexiones |
+| Cuándo conviene | Mientras los módulos vivan juntos | Como **paso previo** a separar un módulo en un servicio: si ya funciona con su usuario propio, sacarlo es mover un datasource |
+
+En los dos casos, todos los usuarios pertenecen a la misma base y al mismo servidor: el aislamiento por usuarios es de **permisos**, no de recursos.
 - **Cuándo no:** si los módulos necesitan escalar o desplegarse de forma independiente **hoy**, o si los equipos son tantos que un solo artefacto los frena. Ahí toca el lab 05.
 - **Cuándo sí:** casi siempre para empezar. Es el punto de partida que recomiendan Sam Newman y Martin Fowler (*MonolithFirst*): cuando los límites están probados, extraer un módulo es mucho más barato.
 

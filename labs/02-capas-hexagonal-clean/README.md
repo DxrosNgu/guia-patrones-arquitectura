@@ -223,7 +223,34 @@ Este lab no trae overlays de ambiente. La lección de ambientes es otra: **el ad
 
 - **Más archivos y más indirección.** Para una regla, la versión hexagonal tiene interfaz de puerto, implementación, entidad JPA, mapeo y raíz de composición. En capas, una clase.
 - **Mapeo duplicado.** `Invention` (dominio) e `InventionEntity` (JPA) son casi iguales. Ese mapeo es el precio de que el dominio no dependa de la base.
-- **⚠️ Una simplificación de este lab:** la regla "nombre único" se comprueba leyendo y luego escribiendo, en las tres versiones. Con dos peticiones simultáneas, las dos pueden pasar. La solución real es un índice único en la base y traducir el error en el adaptador. La arquitectura no elimina los problemas de concurrencia.
+- **⚠️ Una simplificación de este lab:** la regla "nombre único" se comprueba leyendo y luego escribiendo, en las tres versiones. Con dos peticiones simultáneas, las dos pueden pasar. La arquitectura no elimina los problemas de concurrencia. Ver "Cómo se arregla el nombre único", abajo.
+
+### Cómo se arregla el nombre único
+
+El ⚠️ marca algo que funciona en la demo pero **no** debe copiarse así a producción. El problema:
+
+```mermaid
+sequenceDiagram
+    participant A as Petición A (ana, "Paraguas solar")
+    participant DB as Base
+    participant B as Petición B (ana, "paraguas solar")
+    A->>DB: ¿ana ya tiene "paraguas solar"? → no
+    B->>DB: ¿ana ya tiene "paraguas solar"? → no
+    A->>DB: INSERT ✔
+    B->>DB: INSERT ✔  ← duplicado
+```
+
+Leer antes de escribir deja una ventana entre las dos operaciones. La solución es que la **base** garantice la regla, porque es la única que ve las dos escrituras:
+
+1. **Un índice único** en una migración nueva (por inventor, y sin mayúsculas ni espacios de más, igual que la comprobación de hoy):
+   ```sql
+   CREATE UNIQUE INDEX inventions_name_per_inventor ON inventions (inventor_id, lower(trim(name)));
+   ```
+2. **Traducir el error en el adaptador de persistencia.** Postgres responde `23505` (*unique_violation*). El adaptador lo convierte en el mismo error de negocio que ya existe (`409 NAME_ALREADY_USED`). El dominio no sabe de SQLState: esa traducción es justo el trabajo del adaptador.
+3. **La lectura previa puede quedarse**, como cortesía: da un error claro en el caso normal sin pasar por la excepción. Pero ya no es la que garantiza la regla.
+4. **Un test que lo pruebe:** dos inserciones simultáneas del mismo nombre, y exactamente una tiene que fallar con `409`.
+
+En la versión hexagonal, el cambio queda dentro del adaptador y de la migración: el puerto, el caso de uso y los tests de dominio no se tocan. Es otra forma de ver para qué sirve la arquitectura.
 - **Cuándo no:** en un CRUD sin reglas (un formulario que guarda y lista), las capas bastan y la hexagonal es burocracia. Hexagonal empieza a pagar cuando hay **reglas que valen la pena probar solas** o **más de una forma de entrar o salir**.
 
 ## Ejercicio
