@@ -1,15 +1,16 @@
-# Instrumentar a mano o automáticamente: Python, Quarkus y Spring
+# Instrumentar a mano o automáticamente: Python, Quarkus y Java con agente
 
 OpenTelemetry tiene dos capas:
 
 - **Instrumentación automática:** una librería, agente o extensión crea los spans de lo **técnico** (peticiones HTTP, consultas SQL, mensajes de Kafka) sin que escribas código.
 - **Instrumentación manual:** tu código crea spans, atributos y métricas de lo que **solo tú sabes**: qué paso del negocio es, qué pedido, cuántos se aceptaron.
 
-En la práctica se usan **las dos**: la automática te da el esqueleto de la traza y la manual le pone nombres de negocio. Este lab muestra las dos en los dos lenguajes.
+En la práctica se usan **las dos**: la automática te da el esqueleto de la traza y la manual le pone nombres de negocio. Este lab muestra tres formas, una por servicio.
 
 | | Lo técnico (automático) | Lo de negocio (manual) |
 |---|---|---|
 | **orders** (Quarkus) | La extensión `quarkus-opentelemetry`: HTTP entrante y saliente, JDBC, Kafka, logs | `@WithSpan` en [`StockCheck`](../services/orders/src/main/java/com/mercadoinventos/orders/StockCheck.java), `Tracer` y `Meter` en [`OrderService`](../services/orders/src/main/java/com/mercadoinventos/orders/OrderService.java) |
+| **gateway** (Spring Cloud Gateway) | El **agente de Java** (`-javaagent`): servidor y cliente HTTP, logs y métricas de la JVM. Sin código ni dependencias | Nada: un gateway no tiene lógica de negocio |
 | **inventory** (Python) | Instrumentaciones de FastAPI y SQLAlchemy, activadas **en el código** | El SDK configurado a mano en [`telemetry.py`](../services/inventory/app/telemetry.py), el span del consumidor de Kafka y la métrica `inventory.reservations` |
 
 ![La traza: orders.check-stock (@WithSpan) agrupa las llamadas HTTP a inventario; orders.save-and-publish (Tracer) agrupa los INSERT y el publish a Kafka, que continúa en inventory](traza.png)
@@ -124,9 +125,36 @@ Context parent = GlobalOpenTelemetry.getPropagators().getTextMapPropagator()
 Span span = tracer.spanBuilder(record.topic() + " process").setParent(parent).setSpanKind(SpanKind.CONSUMER).startSpan();
 ```
 
+## Java con el agente: el gateway
+
+El gateway no tiene **ninguna** dependencia de OpenTelemetry en su [`pom.xml`](../gateway/pom.xml) ni una línea de código de observabilidad. El agente se baja junto al jar y se engancha a la JVM al arrancar ([`Dockerfile`](../gateway/Dockerfile)):
+
+```dockerfile
+CMD ["java", "-javaagent:/app/opentelemetry-javaagent.jar", "-jar", "gateway.jar"]
+```
+
+Y se configura **solo** con variables de entorno ([`compose.yaml`](../compose.yaml)):
+
+```yaml
+OTEL_SERVICE_NAME: gateway
+OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
+OTEL_METRIC_EXPORT_INTERVAL: "10000"
+```
+
+| | El agente |
+|---|---|
+| Qué instrumenta | Lo que reconoce en el classpath: aquí Netty y Reactor Netty (el span `SERVER` de la petición y el `CLIENT` hacia orders). También JDBC, Kafka, gRPC, la mayoría de los clientes HTTP… |
+| Propagación | Automática: lee el `traceparent` que llega y lo agrega a lo que sale |
+| Logs | Pone `trace_id` y `span_id` en el MDC (Logback, Log4j) y exporta los logs por OTLP. Por eso los logs del gateway están en Loki |
+| Apagarlo | `OTEL_JAVAAGENT_ENABLED=false` (experimento 7 del README) |
+| Costo | Unos segundos más de arranque y algo de memoria: instrumenta clases mientras se cargan |
+| Riesgo típico | Una versión de librería que el agente no soporta todavía: esos spans **faltan en silencio**. Hay que mirar la traza, no asumir |
+
+Sirve para cualquier aplicación Java, aunque no sea tuya: un servicio de terceros, un sistema viejo que no se puede recompilar o un gateway como este.
+
 ## Spring Boot (referencia)
 
-Quarkus soporta todo lo de este lab, así que no hizo falta Spring. Para comparar, en Spring Boot:
+Para los servicios **tuyos** en Spring, además del agente existe la integración propia. Comparada con Quarkus:
 
 | Necesidad | Quarkus | Spring Boot |
 |---|---|---|
@@ -142,11 +170,11 @@ La diferencia de fondo: Spring usa **Micrometer** como fachada propia (Observati
 
 ## Resumen
 
-| | Python a mano | Python automático | Quarkus |
-|---|---|---|---|
-| Esfuerzo inicial | Alto (≈60 líneas en `telemetry.py`) | Bajo (un comando) | Bajo (una dependencia, 3 propiedades) |
-| Propagación por Kafka | A mano (`propagate.extract`) | Según exista la instrumentación de tu cliente | Automática |
-| Spans de negocio | `tracer.start_as_current_span` | Igual, a mano | `@WithSpan` o `Tracer` |
-| Métricas de negocio | `meter.create_counter` | Igual, a mano | `Meter` |
-| Riesgo típico | Olvidar una pieza del SDK | Versiones no soportadas, spans que faltan en silencio | `span.end()`, `makeCurrent()`, métodos privados con `@WithSpan` |
-| Mejor para | Aprender cómo funciona | Servicios Python en producción | Servicios Quarkus en producción |
+| | Python a mano | Python automático | Quarkus | Java con agente |
+|---|---|---|---|---|
+| Esfuerzo inicial | Alto (≈60 líneas en `telemetry.py`) | Bajo (un comando) | Bajo (una dependencia, 3 propiedades) | Muy bajo (un jar y variables de entorno) |
+| Propagación por Kafka | A mano (`propagate.extract`) | Según exista la instrumentación de tu cliente | Automática | Automática |
+| Spans de negocio | `tracer.start_as_current_span` | Igual, a mano | `@WithSpan` o `Tracer` | `@WithSpan` (con la dependencia de anotaciones) o la API de OTel |
+| Métricas de negocio | `meter.create_counter` | Igual, a mano | `Meter` | La API de OTel o Micrometer |
+| Riesgo típico | Olvidar una pieza del SDK | Versiones no soportadas, spans que faltan en silencio | `span.end()`, `makeCurrent()`, métodos privados con `@WithSpan` | Igual que Python automático: librerías no soportadas, spans que faltan en silencio |
+| Mejor para | Aprender cómo funciona | Servicios Python en producción | Servicios Quarkus en producción | Aplicaciones Java que no quieres o no puedes tocar (como este gateway) |

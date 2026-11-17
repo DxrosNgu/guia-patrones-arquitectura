@@ -1,0 +1,36 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Gateway · lab 10 (observabilidad)
+#
+# Solo enruta. La observabilidad la pone el agente de OpenTelemetry (variables OTEL_* en compose.yaml):
+# crea el span de cada petición, propaga el traceparent hacia orders y exporta trazas, métricas y logs.
+# ─────────────────────────────────────────────────────────────────────────
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: orders
+              uri: ${ORDERS_URL:http://localhost:8102}
+              predicates:
+                - Path=/api/orders/**,/api/orders
+            - id: inventory
+              uri: ${INVENTORY_URL:http://localhost:8103}
+              predicates:
+                - Path=/api/stock/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+logging:
+  pattern:
+    # El agente pone trace_id y span_id en el MDC: así cada línea de log lleva su traza.
+    console: "%d{HH:mm:ss.SSS} %-5level [%logger{0}] trace_id=%X{trace_id} %msg%n"
