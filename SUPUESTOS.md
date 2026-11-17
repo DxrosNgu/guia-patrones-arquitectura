@@ -174,6 +174,16 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 - **L13-5 🟢 La protección contra el stampede se cambia en caliente** (`PUT /admin/stampede-protection`), sin reiniciar, para comparar con y sin.
 - **L13-6 🟡 Sin caché negativa** (los SKU que no existen no se cachean). Está marcado con ⚠️ y es el ejercicio.
 
+### Lab 14 · CQRS
+
+- **L14-1 🟢 Pagos y envíos están simulados** por un solo proceso (`fulfillment`) que, por cada `OrderPlaced`, publica `PaymentConfirmed` y `ShipmentDispatched`. El lab trata de cómo la vista **junta** eventos de varios servicios, no de cómo se paga (eso es de los labs 16 y 17).
+- **L14-2 🟢 Demora artificial de 1,5 s por evento** en el proyector (`PROJECTION_DELAY_MS`), para que la consistencia eventual se vea en la web. Sin ella, la vista se actualiza en milisegundos y las tres técnicas parecen iguales.
+- **L14-3 🟢 El proyector y la API de lectura son la misma imagen con dos comandos**, en procesos separados: si el proyector cae, la API sigue respondiendo.
+- **L14-4 🟢 Reconstruir = cambiar `PROJECTION_VERSION`.** El proyector vacía la colección y vuelve al offset 0 (con un `ConsumerRebalanceListener`). Primero lo hice con un consumer group por versión, pero al **volver** a una versión anterior, ese grupo ya tenía offsets guardados y la vista quedaba vacía para siempre. El *blue/green* (otra colección) solo se explica.
+- **L14-5 🟢 Los consumidores Python manejan `SIGTERM`.** Sin handler, Python como PID 1 lo ignora, Docker lo mata a los 10 s y el consumidor no sale del consumer group (no se podía rebobinar). Está contado en el README.
+- **L14-6 🟡 `orders` guarda y después publica (escritura doble)**, como en el lab 06. Está marcado con ⚠️ y apunta al lab 15. No usé el outbox aquí para que el lab trate de una sola cosa.
+- **L14-7 🟢 El historial guarda el nombre del invento del momento de la compra.** Si el catálogo cambia el nombre, el historial no se actualiza: para un historial es lo correcto, y el README lo explica en "Datos duplicados".
+
 ### Lab 15 · Transactional Outbox
 
 - **L15-1 🟢 Un solo servicio con tres modos** (`OUTBOX_MODE=naive|polling|cdc`) para comparar dual write, polling y CDC con el mismo código de negocio.

@@ -1,0 +1,16 @@
+# MongoDB: la base del LADO DE LECTURA en CQRS (lab 14).
+# Un documento por pedido, ya armado para la pantalla: sin JOIN al leer.
+#
+# ⚠️ Un solo nodo, sin autenticación: suficiente para aprender. En prod: replica set de 3 nodos,
+#    usuarios con contraseña y TLS (o un servicio gestionado). Ver labs/14-cqrs/README.md.
+services:
+  mongodb:
+    image: mongo:9.0.8
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--host", "127.0.0.1", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s

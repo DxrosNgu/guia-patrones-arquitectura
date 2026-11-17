@@ -1,0 +1,99 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Lab 14 · CQRS: el historial de pedidos
+#
+#   docker compose up --build -d                       → todo
+#   docker compose stop history-projector              → la vista deja de actualizarse (la API sigue)
+#   PROJECTION_VERSION=2 docker compose up -d history-projector   → reconstruye la vista desde Kafka
+#   PROJECTION_DELAY_MS=0 docker compose up -d history-projector  → sin demora artificial
+#
+#   COMANDOS:  orders (Quarkus) ─ Postgres ─▶ orders.events ┐
+#              fulfillment (simula pagos y envíos) ─▶ payments.events, shipping.events
+#   CONSULTAS: history-projector ─▶ MongoDB ◀─ history-api (FastAPI) ◀─ frontend
+# ─────────────────────────────────────────────────────────────────────────
+name: lab14-cqrs
+
+include:
+  - ../../infra/postgres.yaml
+  - ../../infra/kafka.yaml        # kafka (kafka:9092) + kafka-ui (http://localhost:8090)
+  - ../../infra/mongodb.yaml      # mongodb (mongodb:27017)
+
+x-history-env: &history-env
+  MONGO_URL: mongodb://mongodb:27017
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+services:
+  kafka-init:
+    image: apache/kafka:4.3.2
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        for t in orders.events payments.events shipping.events; do
+          /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic $$t --partitions 3 --replication-factor 1
+        done
+
+  # ── Lado de COMANDOS ────────────────────────────────────────────────────
+  orders:
+    build: ./services/orders
+    image: mercado/lab14-orders:1.0.0
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/orders
+      QUARKUS_DATASOURCE_USERNAME: orders
+      QUARKUS_DATASOURCE_PASSWORD: orders
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+
+  # Simula los servicios de pagos y envíos: por cada pedido publica un pago y un despacho.
+  fulfillment:
+    build: ./services/fulfillment
+    image: mercado/lab14-fulfillment:1.0.0
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PAYMENT_DELAY_S: ${PAYMENT_DELAY_S:-2}
+      SHIPPING_DELAY_S: ${SHIPPING_DELAY_S:-5}
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+
+  # ── Lado de CONSULTAS ───────────────────────────────────────────────────
+  # La misma imagen, dos procesos: el proyector escribe la vista; la API solo la lee.
+  history-projector:
+    build: ./services/order-history
+    image: mercado/lab14-order-history:1.0.0
+    command: ["python", "-m", "app.projector"]
+    environment:
+      <<: *history-env
+      PROJECTION_VERSION: ${PROJECTION_VERSION:-1}
+      PROJECTION_DELAY_MS: ${PROJECTION_DELAY_MS:-1500}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+
+  history-api:
+    build: ./services/order-history
+    image: mercado/lab14-order-history:1.0.0
+    environment: *history-env
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    # Ojo: la API NO depende del proyector ni de Kafka. Solo de su base.
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    image: mercado/lab14-frontend:1.0.0
+    depends_on:
+      history-api:
+        condition: service_healthy
