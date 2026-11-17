@@ -339,7 +339,7 @@ flowchart TD
 | [17](labs/17-saga-orquestacion/) | Saga (orquestación) | Lo mismo, con el flujo explícito y visible | El mismo flujo con orquestador | Quarkus · FastAPI · React | Kafka | ✅ |
 | [18](labs/18-event-sourcing/) | Event Sourcing | El estado actual pierde la historia | Monedero cuyo saldo se deriva de eventos | Quarkus | — | ✅ |
 | [19](labs/19-anti-corruption-layer/) | Anti-Corruption Layer | El modelo de un legado contamina el tuyo | Integración con un transportista legado (XML) | FastAPI | — | ✅ |
-| 20 | Strangler Fig | Reescribir todo de una vez falla | Migrar la tienda legada ruta por ruta | Spring Cloud Gateway · Quarkus · FastAPI | — | 🗓️ |
+| [20](labs/20-strangler-fig/) | Strangler Fig | Reescribir todo de una vez falla | Migrar la tienda legada ruta por ruta | Spring Cloud Gateway · Quarkus · FastAPI | — | ✅ |
 | 21 | Micro-frontends | Un frontend, varios equipos | Shell más remotos de catálogo y pedidos | React | — | 🗓️ |
 | 22 | Proyecto integrador | Decidir qué patrón usar dónde | Todo junto en los 3 ambientes | Todos | Todo | 🗓️ |
 
@@ -678,6 +678,8 @@ Una saga no se aprende solo con el camino feliz. Estos son los casos que reprodu
 - **Rómpelo:** el legado cambia un código de estado. En la versión con ACL solo cambia el adaptador.
 
 #### 20 · Strangler Fig
+
+✅ [Ir al lab](labs/20-strangler-fig/)
 
 - **Patrones:** Strangler Fig · Canary Release (enrutamiento por pesos).
 - **Problema:** reescribir un sistema completo de una sola vez (*big bang*) casi siempre falla. Hay que migrar mientras el negocio sigue operando.

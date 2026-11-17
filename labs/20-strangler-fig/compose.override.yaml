@@ -1,0 +1,11 @@
+# Ambiente LOCAL (Compose lo carga solo).
+# El cliente solo debería usar el gateway (8080). Los demás puertos son para mirar adentro.
+services:
+  gateway:
+    ports: ["8080:8080"]
+  legacy-shop:
+    ports: ["8120:8000"]
+  catalog:
+    ports: ["8101:8080"]
+  orders:
+    ports: ["8102:8080"]

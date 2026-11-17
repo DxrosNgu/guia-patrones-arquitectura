@@ -1,0 +1,21 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Gateway del Strangler Fig · lab 20
+#
+# Las rutas están en Routes.java (necesitan leer el estado de la migración en cada petición).
+# Las direcciones de los servicios llegan por variables: LEGACY_URL, CATALOG_URL, ORDERS_URL.
+# ─────────────────────────────────────────────────────────────────────────
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,gateway
+  endpoint:
+    gateway:
+      access: read-only
