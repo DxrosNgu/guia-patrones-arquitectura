@@ -1,9 +1,10 @@
 ### Lab 10 · Observabilidad
+@gateway = http://localhost:8080
 @orders = http://localhost:8102
 @inventory = http://localhost:8103
 
-### Crear un pedido: copia el header X-Trace-Id de la respuesta y búscalo en Grafana
-POST {{orders}}/api/orders
+### Crear un pedido POR EL GATEWAY: copia el header X-Trace-Id de la respuesta y búscalo en Grafana
+POST {{gateway}}/api/orders
 Content-Type: application/json
 
 { "customerId": "ana", "items": [{ "sku": "INV-001", "quantity": 1 }, { "sku": "INV-003", "quantity": 1 }] }

@@ -5,7 +5,7 @@
 **Patrones:** Distributed Tracing · Log Aggregation · Application Metrics · Health Check API · Correlation ID
 **Stack:** Quarkus + `quarkus-opentelemetry` · FastAPI + OpenTelemetry SDK · **Infra:** PostgreSQL, Kafka, Grafana LGTM (Grafana + Tempo + Loki + Prometheus + colector OTel) · **Tiempo estimado:** 1,5 h · **Requiere:** lab 06
 
-![Una sola traza: orders (Quarkus), con sus spans de negocio orders.check-stock y orders.save-and-publish → inventory (HTTP) → Postgres → Kafka → inventory (consumidor) → Postgres](docs/traza.png)
+![Una sola traza: gateway (Spring Cloud Gateway con el agente de OpenTelemetry) → orders (Quarkus), con sus spans de negocio orders.check-stock y orders.save-and-publish → inventory (HTTP) → Postgres → Kafka → inventory (consumidor) → Postgres](docs/traza.png)
 
 *Una sola petición `POST /api/orders` vista en Grafana Tempo: 15 spans y 2 servicios en 2 lenguajes, unidos por HTTP y por Kafka.*
 
@@ -36,19 +36,20 @@ Con un monolito bastaba un stack trace y un archivo de log. Con microservicios, 
 
 Lo que los une es el **traceId**:
 
-1. El primer servicio que recibe la petición lo genera.
+1. El primer componente que recibe la petición lo genera: aquí, el **gateway** (la puerta de entrada, como en el lab 07).
 2. Viaja en el header HTTP `traceparent` (estándar W3C) **y en los headers de los mensajes de Kafka**.
 3. Cada servicio lo agrega a sus spans **y a cada línea de log**.
 4. Pedidos lo devuelve al cliente en `X-Trace-Id` (el *Correlation ID*). Con ese valor el soporte encuentra todo.
 
 ```mermaid
 flowchart LR
-    C(("Cliente")) -->|"POST /api/orders"| O["orders<br/>Quarkus"]
+    C(("Cliente")) -->|"POST /api/orders"| G["gateway<br/>Spring Cloud Gateway<br/>+ agente OTel"]
+    G -->|"traceparent<br/>(header HTTP)"| O["orders<br/>Quarkus"]
     O -->|"traceparent<br/>(header HTTP)"| I1["inventory<br/>GET /api/stock"]
     O -->|"traceparent<br/>(header Kafka)"| K[["orders.events"]]
     K --> I2["inventory<br/>consumidor"]
-    O & I1 & I2 -->|"OTLP: trazas, métricas, logs"| L["Grafana LGTM"]
-    O -.->|"X-Trace-Id"| C
+    G & O & I1 & I2 -->|"OTLP: trazas, métricas, logs"| L["Grafana LGTM"]
+    O -.->|"X-Trace-Id (pasa por el gateway)"| C
 ```
 
 ### Health Check API: dos preguntas distintas
@@ -64,6 +65,7 @@ flowchart LR
 
 | Qué | Dónde |
 |---|---|
+| Gateway (Spring Cloud Gateway): trazas, métricas y logs **sin una línea de código**, con el agente de OpenTelemetry para Java (`-javaagent`) | [`gateway/Dockerfile`](gateway/Dockerfile) y las variables `OTEL_*` en [`compose.yaml`](compose.yaml) |
 | Quarkus: trazas, métricas y logs con **configuración**, sin código | [`application.properties`](services/orders/src/main/resources/application.properties) (`quarkus.otel.*`, `jdbc.telemetry`) |
 | El traceId en cada línea de log | `quarkus.log.console.format=… traceId=%X{traceId}` |
 | Correlation ID para el cliente | [`TraceIdHeader.java`](services/orders/src/main/java/com/mercadoinventos/orders/TraceIdHeader.java) |
@@ -84,20 +86,20 @@ docker compose up --build -d
 ./smoke.sh
 ```
 
-`smoke.sh` hace un pedido y comprueba tres cosas: que Tempo tenga una traza con spans de los dos servicios, que Loki tenga los logs de ambos con el mismo traceId y que Prometheus tenga la métrica de negocio. Al final imprime el traceId para que lo busques.
+`smoke.sh` hace un pedido **por el gateway** (`localhost:8080`, como un cliente real) y comprueba tres cosas: que Tempo tenga una traza con spans del gateway, de orders y de inventory, que Loki tenga los logs de los servicios con el mismo traceId y que Prometheus tenga las métricas de negocio. Al final imprime el traceId para que lo busques.
 
 **Grafana:** http://localhost:3001 → **Explore**:
 - **Tempo**: pega el traceId en la consulta TraceQL.
-- **Loki**: `{service_name=~"orders|inventory"} | trace_id="<traceId>"`.
+- **Loki**: `{service_name=~"gateway|orders|inventory"} | trace_id="<traceId>"`.
 - **Prometheus**: `inventory_reservations_total` o `http_server_request_duration_seconds_count`.
 
 Para limpiar: `docker compose down -v`.
 
 ## Rómpelo
 
-1. **Sigue un pedido.** Haz un pedido con [`requests.http`](requests.http), copia el `X-Trace-Id` y búscalo en Tempo. Recorre el árbol de spans: la consulta de stock (HTTP a inventario y su `SELECT`), los `INSERT` de pedidos, `orders.events publish` y, **como hijo de ese publish**, el `orders.events process` de inventario con su `UPDATE`.
+1. **Sigue un pedido.** Haz un pedido con [`requests.http`](requests.http), copia el `X-Trace-Id` y búscalo en Tempo. La raíz es `gateway POST orders`: el gateway recibe la petición (span `SERVER`) y la reenvía (span `CLIENT`), y recién ahí empieza `orders`. Recorre el árbol de spans: la consulta de stock (HTTP a inventario y su `SELECT`), los `INSERT` de pedidos, `orders.events publish` y, **como hijo de ese publish**, el `orders.events process` de inventario con su `UPDATE`.
 
-   Dos procesos, dos lenguajes y un broker en medio, todo dentro de **una** traza.
+   Tres procesos, tres tecnologías (Spring, Quarkus, Python) y un broker en medio, todo dentro de **una** traza.
 
 2. **Encuentra la lentitud.** Agrega 1,5 segundos de latencia artificial a inventario:
    ```bash
@@ -120,6 +122,17 @@ Para limpiar: `docker compose down -v`.
 5. **Métricas, no solo trazas.** En Prometheus, `inventory_reservations_total` cuenta las reservas por resultado y `sum by (http_response_status_code) (http_server_request_duration_seconds_count{job="orders"})` muestra las respuestas de pedidos por código HTTP. Haz algunos pedidos de INV-002 (stock 0): pedidos los rechaza **antes** de publicar (consulta de stock → `409`). La serie `409` crece y las reservas de inventario no cambian. Una traza explica **una** petición; una métrica dice **cuántas** van así. Las métricas se exportan cada 10 s (en Quarkus el default es 60 s; aquí se bajó con `quarkus.otel.metric.export.interval`).
 
 6. **¿Qué pasa si se pierde el traceparent?** En [`consumer.py`](services/inventory/app/consumer.py), quita `context=parent` del `start_as_current_span`. Reconstruye inventario y haz un pedido: ahora el consumidor de Kafka aparece en una traza **separada**, sin relación con el pedido. Así de frágil es la propagación de contexto: un eslabón que no la pasa corta la historia.
+
+7. **Un eslabón sin instrumentar.** Apaga el agente del gateway:
+   ```bash
+   OTEL_JAVAAGENT_ENABLED=false docker compose up -d gateway
+   ```
+   Haz un pedido **por el gateway** y abre su traza: empieza en `orders POST /api/orders`, como si el gateway no existiera. La petición pasó por él igual, pero nadie lo vio. Si el gateway tardara 2 s en reenviar, la traza mostraría un pedido rápido y el cliente vería uno lento. Para volver: `docker compose up -d gateway`.
+
+### Lo que encontré al escribir el lab
+
+- **La primera petición después de arrancar el gateway tardó 361 ms**, y 290 de ellos fueron **dentro del gateway**, antes de reenviar: la JVM recién arrancada (clases que se cargan, código que todavía no se compiló). Las siguientes tardaron unos 47 ms. Sin el span del gateway, esos 290 ms no aparecían en ninguna traza.
+- **Spans repetidos.** En 2 de las primeras 3 trazas que pasaron por el gateway, Grafana mostró 26 spans donde había 19: los de `orders`, dos veces, con el **mismo** `spanId`. No se repitió en las más de 30 trazas siguientes, ni reiniciando todo con `down -v`, y un colector intermedio de diagnóstico mostró que `orders` envía cada span una sola vez. La telemetría viaja *at-least-once*: un reintento entre el exportador, el colector y Tempo (una respuesta que llega tarde aunque el dato se haya guardado) duplica un lote. Si lo ves, la señal es esa: el mismo `spanId` dos veces. Los backends suelen deduplicar al compactar.
 
 ## ¿Qué cambia en dev y prod?
 
