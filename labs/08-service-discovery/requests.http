@@ -1,0 +1,20 @@
+### Lab 08 · Service Registry y Discovery
+@orders = http://localhost:8102
+
+### Una consulta por Consul + Stork: ¿qué réplica respondió?
+GET {{orders}}/api/discovery/consul/stock/INV-001
+
+### Una consulta por DNS
+GET {{orders}}/api/discovery/dns/stock/INV-001
+
+### 9 llamadas por Consul: round-robin entre las réplicas sanas
+GET {{orders}}/api/discovery/consul/spread?calls=9
+
+### 9 llamadas por DNS: casi siempre la misma réplica
+GET {{orders}}/api/discovery/dns/spread?calls=9
+
+### Lo que sabe Consul: instancias sanas de inventory
+GET http://localhost:8500/v1/health/service/inventory?passing
+
+### Todas las instancias registradas (sanas o no)
+GET http://localhost:8500/v1/catalog/service/inventory

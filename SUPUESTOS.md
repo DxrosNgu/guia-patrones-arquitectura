@@ -116,6 +116,15 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 - **L07-7 🟢 Con un servicio caído, el gateway responde `500`** (no `503`) y sin *fallback*. Lo dejé así a propósito: el circuit breaker y el *fallback* son del lab 11.
 - **L07-8 🟢 Los servicios exponen sus puertos en local** (8101 y 8102) solo para el experimento de "saltarse el gateway". En prod solo se expondría el gateway.
 
+### Lab 08 · Service Registry y Discovery
+
+- **L08-1 🟢 Consul 2.1.0**, la última estable. La guía mencionaba Consul sin versión.
+- **L08-2 🟢 Inventario en memoria y sin base**: el lab es sobre encontrar instancias. Cada respuesta dice qué réplica respondió (el ID del contenedor, que es su hostname), así se puede hacer `docker kill` de una réplica concreta.
+- **L08-3 🟢 Los dos caminos conviven en el mismo pedidos** (`/api/discovery/dns/...` y `/api/discovery/consul/...`) para compararlos con las mismas réplicas.
+- **L08-4 🟢 "Server-side discovery" se muestra con el DNS de Docker**, como decía el plan, y el README explica que en Kubernetes el `Service` agrega salud con los *readiness probes*. Un balanceador real (Traefik) quedó como ejercicio.
+- **L08-5 🟢 Stork refresca cada 2 s** (el default es 5 minutos), para que los experimentos se vean en segundos.
+- **L08-6 🟢 Eureka solo se compara en el README**, sin implementarlo: Stork lo soporta con un cambio de configuración.
+
 ### Lab 10 · Observabilidad
 
 - **L10-1 🟡 Sin gateway ni frontend en la traza.** **Pediste más detalle.** Hoy la traza **empieza en `orders`**: el primer span es `POST /api/orders`, porque la petición la hace `curl` o `requests.http` directamente. El plan original decía "de React al gateway, a pedidos, a Kafka, a inventario", pero el gateway (lab 07) y el frontend de ese flujo todavía no existen.

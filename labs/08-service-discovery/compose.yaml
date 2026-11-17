@@ -1,0 +1,49 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Lab 08 · Service Registry y Discovery
+#
+#   orders ──(DNS "inventory")──────────────► inventory ×3
+#   orders ──(Stork → Consul → round-robin)─► inventory ×3
+#                    ▲
+#   cada inventory se registra sola en Consul y Consul le hace health checks
+#
+#   docker compose up --build -d
+#   docker compose up -d --scale inventory=5     → más réplicas (se registran solas)
+#   Consul UI: http://localhost:8500
+# ─────────────────────────────────────────────────────────────────────────
+name: lab08-service-discovery
+
+services:
+  consul:
+    image: hashicorp/consul:2.1.0
+    # Modo desarrollo: un solo nodo, en memoria. En prod son 3 o 5 servidores (ver README).
+    command: ["agent", "-dev", "-client=0.0.0.0", "-ui"]
+    healthcheck:
+      test: ["CMD", "consul", "members"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  inventory:
+    build: ./services/inventory
+    image: mercado/lab08-inventory:1.0.0
+    # Tres réplicas desde el arranque, SIN puertos publicados: nadie las llama por puerto fijo.
+    deploy:
+      replicas: 3
+    environment:
+      CONSUL_URL: http://consul:8500
+    depends_on:
+      consul:
+        condition: service_healthy
+
+  orders:
+    build: ./services/orders
+    image: mercado/lab08-orders:1.0.0
+    environment:
+      INVENTORY_DNS_URL: http://inventory:8000
+      CONSUL_HOST: consul
+      CONSUL_PORT: "8500"
+    depends_on:
+      consul:
+        condition: service_healthy
+      inventory:
+        condition: service_healthy
