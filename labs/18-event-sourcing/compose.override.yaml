@@ -1,0 +1,4 @@
+# Ambiente LOCAL (Compose lo carga solo).
+services:
+  wallet:
+    ports: ["8106:8080"]

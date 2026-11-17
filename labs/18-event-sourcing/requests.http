@@ -1,0 +1,72 @@
+### Lab 18 · Event Sourcing
+@w = http://localhost:8106
+
+### El saldo de ana, calculado ahora desde sus eventos (mira X-Snapshot-Version y X-Events-Replayed)
+GET {{w}}/api/wallets/wallet-ana
+
+### Viaje en el tiempo: el saldo al 1 de noviembre (00:00 en Lima)
+GET {{w}}/api/wallets/wallet-ana?at=2026-11-01
+
+### La historia: cada evento, su formato guardado (storedSchemaVersion) y el saldo después
+GET {{w}}/api/wallets/wallet-ana/events
+
+### Abrir un monedero
+# @name opened
+POST {{w}}/api/wallets
+Content-Type: application/json
+
+{"owner": "carla"}
+
+### Depositar
+POST {{w}}/api/wallets/{{opened.response.body.id}}/deposits
+Content-Type: application/json
+
+{"amount": 100.00, "channel": "YAPE", "description": "Recarga"}
+
+### Retirar
+POST {{w}}/api/wallets/{{opened.response.body.id}}/withdrawals
+Content-Type: application/json
+
+{"amount": 30.00, "description": "Taza que avisa cuando se enfría"}
+
+### Retirar más de lo que hay → 422, y el rechazo queda en la historia
+POST {{w}}/api/wallets/{{opened.response.body.id}}/withdrawals
+Content-Type: application/json
+
+{"amount": 500.00}
+
+### PROYECCIÓN: todos los saldos (una consulta, sin releer eventos)
+GET {{w}}/api/balances
+
+### PROYECCIÓN: movimientos por mes de ana
+GET {{w}}/api/wallets/wallet-ana/monthly
+
+### Estado del proyector: checkpoint y eventos pendientes
+GET {{w}}/admin/projections
+
+### Borrar las vistas y rearmarlas desde el primer evento
+POST {{w}}/admin/projections/rebuild
+
+### Abrir la "ventana" de concurrencia: 300 ms entre leer y guardar
+PUT {{w}}/admin/think-time
+Content-Type: application/json
+
+{"ms": 300}
+
+### Intentos ante un conflicto de versión (1 = sin reintentos → 409)
+PUT {{w}}/admin/retries
+Content-Type: application/json
+
+{"maxAttempts": 3}
+
+### Versión INGENUA: un monedero con solo el saldo actual
+POST {{w}}/api/naive/wallets
+Content-Type: application/json
+
+{"owner": "carla", "balance": 100.00}
+
+### Versión INGENUA: retirar (prueba lanzar dos a la vez con think-time > 0)
+POST {{w}}/api/naive/wallets/naive-beto/withdrawals
+Content-Type: application/json
+
+{"amount": 80.00}

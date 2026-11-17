@@ -337,7 +337,7 @@ flowchart TD
 | [15](labs/15-transactional-outbox/) | Transactional Outbox · Polling Publisher · Log Tailing | Guardar y publicar no es atómico | Pedido creado sin su evento | Quarkus | Kafka · Debezium | ✅ |
 | [16](labs/16-saga-coreografia/) | Saga (coreografía) | Una transacción de negocio entre 4 BD | Flujo de compra completo con compensaciones | Quarkus · FastAPI · React | Kafka | ✅ |
 | [17](labs/17-saga-orquestacion/) | Saga (orquestación) | Lo mismo, con el flujo explícito y visible | El mismo flujo con orquestador | Quarkus · FastAPI · React | Kafka | ✅ |
-| 18 | Event Sourcing | El estado actual pierde la historia | Monedero cuyo saldo se deriva de eventos | Quarkus | — | 🗓️ |
+| [18](labs/18-event-sourcing/) | Event Sourcing | El estado actual pierde la historia | Monedero cuyo saldo se deriva de eventos | Quarkus | — | ✅ |
 | 19 | Anti-Corruption Layer | El modelo de un legado contamina el tuyo | Integración con un transportista legado (XML) | FastAPI | — | 🗓️ |
 | 20 | Strangler Fig | Reescribir todo de una vez falla | Migrar la tienda legada ruta por ruta | Spring Cloud Gateway · Quarkus · FastAPI | — | 🗓️ |
 | 21 | Micro-frontends | Un frontend, varios equipos | Shell más remotos de catálogo y pedidos | React | — | 🗓️ |
@@ -646,6 +646,8 @@ Una saga no se aprende solo con el camino feliz. Estos son los casos que reprodu
 | S13 | Un participante nunca responde | La saga queda colgada | Un timeout global de saga la pasa a `EXPIRED` y se compensa |
 
 #### 18 · Event Sourcing
+
+✅ [Ir al lab](labs/18-event-sourcing/)
 
 - **Patrones:** Event Sourcing · Event Store · Snapshot · Projection · Event Upcasting.
 - **Problema:** guardar solo el estado actual borra la historia. ¿Por qué el saldo es este? ¿Cuál era el saldo el 1 de noviembre? Además, dos retiros concurrentes pueden pisarse (*lost update*).
