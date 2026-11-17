@@ -5,7 +5,9 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 **Leyenda:**
 - ✅ Resuelto con tu respuesta.
 - 🟢 Decisión de bajo riesgo: cambiarla es barato.
-- 🟡 Conviene que la revises: cambiarla toca varios labs.
+- 🟡 (el círculo amarillo) Conviene que la revises: es una decisión con un costo o un riesgo que acepté **a propósito**, o cambiarla toca varios labs. No es un error pendiente. Si trae **Pregunta:**, necesito tu respuesta.
+
+En los README aparece otro símbolo, ⚠️: marca una **simplificación consciente**. Funciona en el lab, pero no debe copiarse así a producción, y el README explica cómo sería la versión real. Un 🟡 de aquí suele tener su ⚠️ en el README del lab.
 
 ---
 
@@ -13,7 +15,7 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 
 | # | Tema | Tu respuesta | Qué hice / haré |
 |---|---|---|---|
-| S-01 ✅ | Orden de construcción | Secuencial: 1, 2, 3, 4, 5… | La ruta Saga (01, 05, 06, 10, 12, 15, 16 y 17) ya estaba hecha. Desde ahí sigo en orden: 02 ✅, 03 ✅, 04 ✅, y los próximos son 07, 08, 09, 11, 13, 14 y 18 a 22. **En pausa** hasta que respondas los supuestos de los labs que faltan (L02 en adelante, salvo L05, L06 y L10) |
+| S-01 ✅ | Orden de construcción | Secuencial: 1, 2, 3, 4, 5… | La ruta Saga (01, 05, 06, 10, 12, 15, 16 y 17) ya estaba hecha. Desde ahí sigo en orden: 02 ✅, 03 ✅, 04 ✅, y los próximos son 07, 08, 09, 11, 13, 14 y 18 a 22. Hoy están listos del 01 al 21; falta el 22 (integrador) |
 | S-02 ✅ | Archivos compartidos | En una carpeta general, salvo que sean otra versión | Carpeta `shared/` en la raíz. Los labs la usan con `additional_contexts` de Compose, sin copiarla. Lo que difiere entre labs (por ejemplo, el paquete Java de cada servicio) queda en cada lab |
 | S-03 ✅ | Upgrade de tus servicios a Spring Boot | Aparte, con la última versión de Spring Boot | Fuera de esta guía. Queda anotado para el proyecto separado: última versión estable de Spring Boot |
 | S-04 ✅ | Quarkus 4 | Solo releases. Pendiente opcional | Sigo en Quarkus 3.40.1 (estable). Quarkus 4 queda en [`docs/actualizaciones-futuras.md`](docs/actualizaciones-futuras.md) |
@@ -46,35 +48,38 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 
 ### Lab 02 · Capas vs. Hexagonal vs. Clean
 
-- **L02-1 🟢 Puertos 8111 y 8112** para las versiones hexagonales (Quarkus y Python). La convención reserva 8101 para `catalog`, que aquí usa la versión en capas.
-- **L02-2 🟢 Las tres versiones comparten la base `catalog`**, cada una en su esquema (`layered`, `hexagonal`, `hexagonal_py`). Son el mismo servicio, así que no aplica Database per Service entre ellas.
-- **L02-3 🟢 El mismo contrato HTTP en las tres** (JSON, códigos de error y estados), para que el smoke y los tests de API sean idénticos. Por eso la versión en capas también devuelve `{code, message}`, aunque lo "típico" sería un 400 genérico de Bean Validation.
-- **L02-4 🟢 Clean y Onion no tienen versión propia.** Se explican con una tabla de vocabulario sobre la versión hexagonal: comparten la regla de dependencia y la diferencia es de nombres y de organización.
-- **L02-5 🟢 El CLI solo existe en la versión Python.** Agregarlo a las otras queda como experimento para el lector.
-- **L02-6 🟡 En memoria, la versión Quarkus sigue conectándose a Postgres al arrancar** (Flyway e Hibernate se inicializan siempre). Desactivarlos obligaba a cambiar el adaptador a `Instance<EntityManager>`. Lo dejé como ejercicio en lugar de complicar el código principal.
-- **L02-7 🟢 "Nombre único" se comprueba leyendo antes de escribir**, sin índice único. Bajo concurrencia puede fallar, y el README lo marca con ⚠️.
+- **L02-1 ✅ Puertos 8111 y 8112** para las versiones hexagonales (Quarkus y Python). La convención reserva 8101 para `catalog`, que aquí usa la versión en capas. **Respuesta:** OK.
+- **L02-2 ✅ Las tres versiones comparten la base `catalog`**, cada una en su esquema (`layered`, `hexagonal`, `hexagonal_py`). **Respuesta:** OK, siempre que se pueda probar cada servicio. **Hecho:** ya es así: cada versión tiene su puerto y su esquema, y el smoke y los tests de API corren contra las tres.
+- **L02-3 ✅ El mismo contrato HTTP en las tres** (JSON, códigos de error y estados), para que el smoke y los tests de API sean idénticos. **Respuesta:** OK.
+- **L02-4 ✅ Clean y Onion no tienen versión propia**: se explican con una tabla de vocabulario sobre la versión hexagonal. **Respuesta:** OK, así se entiende mejor.
+- **L02-5 ✅ El CLI solo existe en la versión Python.** **Respuesta:** queda como experimento para el lector.
+- **L02-6 ✅ En memoria, la versión Quarkus sigue conectándose a Postgres al arrancar** (Flyway e Hibernate se inicializan siempre). **Respuesta:** queda como ejercicio.
+- **L02-7 ✅ "Nombre único" se comprueba leyendo antes de escribir**, sin índice único. **Preguntaste cómo se soluciona y por qué sale ese signo.** El ⚠️ del README marca una simplificación consciente: con dos peticiones simultáneas, las dos leen "no existe" y las dos insertan. **Hecho:** el README del lab 02 tiene una sección nueva, "Cómo se arregla el nombre único":
+  1. Un índice único en la base: `(inventor_id, lower(trim(name)))`. La base es la única que ve las dos escrituras.
+  2. El adaptador de persistencia traduce el error de Postgres (`23505`) al mismo `409 NAME_ALREADY_USED`. El dominio no se entera de SQLState.
+  3. La lectura previa queda como cortesía (un mensaje claro en el caso normal), pero ya no es la que garantiza la regla.
+  4. Un test con dos inserciones simultáneas del mismo nombre: exactamente una falla.
 
 ### Lab 03 · DDD
 
-- **L03-1 🟢 Un solo servicio con los dos modelos** (`/api/anemic/orders` y `/api/orders`), en lugar de dos servicios como en el lab 02. Así se comparan en el mismo proyecto y se ahorra un contenedor.
-- **L03-2 🟡 El agregado lleva anotaciones de JPA** (atajo pragmático). Separarlas ya se enseña en el lab 02; aquí el foco son las invariantes. `Money`, `OrderLine` y `Quantity` son records (Hibernate los soporta como `@Embeddable`).
-- **L03-3 🟢 La invariante "no se modifica después de pagado" quedó más estricta:** las líneas solo se editan en `DRAFT`. Ajusté el texto del catálogo.
-- **L03-4 🟢 Agregué `@Version` y un experimento de concurrencia** que no estaba en el plan. El anémico pierde o duplica líneas en silencio y el agregado responde `409`. Es el argumento más claro para "un agregado = una unidad de consistencia".
-- **L03-5 🟢 Los eventos de dominio son eventos CDI dentro del proceso**, con `AFTER_SUCCESS`. `/api/events` los guarda en memoria solo para verlos. La publicación entre servicios queda para los labs 06 y 15.
-- **L03-6 🟢 El lado estratégico es documentación** (tabla de "Invento" por contexto y mapa de contextos en mermaid), sin código propio. Cada relación del mapa apunta al lab que la implementa.
+- **L03-1 ✅ Un solo servicio con los dos modelos** (`/api/anemic/orders` y `/api/orders`). **Respuesta:** sí, es mejor: menos complejidad y menos recursos.
+- **L03-2 ✅ El agregado lleva anotaciones de JPA.** **Respuesta:** no separarlas; queda como atajo pragmático (separarlas ya se enseña en el lab 02).
+- **L03-3 ✅ La invariante "no se modifica después de pagado" quedó más estricta**: las líneas solo se editan en `DRAFT`. **Respuesta:** OK, buen ejemplo.
+- **L03-4 ✅ `@Version` y el experimento de concurrencia** (el anémico pierde o duplica líneas; el agregado responde `409`). **Respuesta:** te agradó la idea.
+- **L03-5 ✅ Los eventos de dominio son eventos CDI dentro del proceso**, con `AFTER_SUCCESS`. **Respuesta:** OK.
+- **L03-6 ✅ El lado estratégico es documentación** (tabla de "Invento" por contexto y mapa de contextos). **Respuesta:** OK, la documentación es importante.
 
 ### Lab 04 · Monolito modular
 
 - **L04-1 🟢 Puerto 8100 para `shop`**, que no estaba en la convención: el monolito junta catálogo, pedidos, inventario y pagos.
 - **L04-2 🟢 Agregué un módulo `shipping`** que escucha `OrderPlaced`. Sirve para mostrar eventos dentro del proceso sin ciclos de dependencia y la consistencia eventual dentro de un monolito (`SHIPPING_CHAOS_FAIL`).
 - **L04-3 🟢 La versión ingenua es un experimento**, no un servicio aparte: `experiments/romper-limites.sh` agrega una clase que viola un límite y muestra cómo falla el build. Corre con Docker, o con `LOCAL=1` si tienes Java 25.
-- **L04-4 🟡 Un solo usuario de base de datos para todos los esquemas.** ArchUnit no ve el SQL nativo que cruza esquemas. Un usuario por esquema obligaría a usar varios datasources y perder la transacción única. Lo explico en "Costo".
+- **L04-4 ✅ Un solo usuario de base de datos para todos los esquemas.** **Respuesta:** explicarlo con un esquema para todos. **Hecho:** el README del lab 04 tiene "Un usuario o un usuario por módulo": un diagrama de las dos opciones y una tabla con quién protege los límites, qué pasa con el SQL nativo, la transacción única, la configuración y cuándo conviene cada una (un usuario por módulo es el paso previo a separar un servicio).
 - **L04-5 🟢 Base `shop`** (la misma que usaba la versión ingenua del lab 05), con un esquema por módulo creado por Flyway.
 
 ### Lab 05 · Microservicios
 
-- **L05-1 🟡 Sin `compose.dev.yaml` desde este lab.** **Preguntaste qué es un overlay.** Es un archivo de Compose que se **superpone** al `compose.yaml` base y solo cambia lo que difiere en un ambiente: `docker compose -f compose.yaml -f compose.prod.yaml up` combina los dos, y gana el último. En el lab 01 son `compose.override.yaml` (local, se carga solo), `compose.dev.yaml` y `compose.prod.yaml`. Dónde verlo: [`docs/ambientes.md`](docs/ambientes.md), el [README del lab 01](labs/01-ambientes/README.md#el-patrón) y el glosario.
-  **La pregunta sigue abierta:** ¿quieres los tres overlays (local, dev, prod) en **todos** los labs aunque dev sea casi igual a local, o solo donde el patrón cambia entre ambientes (como ahora)?
+- **L05-1 ✅ Overlays de ambiente.** **Respuesta:** solo en los labs donde el patrón cambia entre ambientes. **Hecho:** se queda así: el lab 01 tiene los tres (`compose.override.yaml`, `compose.dev.yaml`, `compose.prod.yaml`), y los labs 05 y 06 tienen `compose.prod.yaml`. Los demás traen la sección "¿Qué cambia en dev y prod?" en su README. Qué es un overlay: [`docs/ambientes.md`](docs/ambientes.md).
 - **L05-2 ✅ El pedido trae los precios en la petición.** **Pediste la explicación.** En la vida real, pedidos **no puede confiar** en el precio que manda el cliente: cualquiera podría comprar a 0,01 editando la petición. Debería pedírselo al catálogo (por API o con una copia local del precio actualizada por eventos). Este lab no tiene catálogo para no sumar un cuarto servicio que no aporta a Database per Service. Por eso está marcado con ⚠️: es una **simplificación consciente**, y el ⚠️ avisa que no se debe copiar así a un sistema real.
 - **L05-3 ✅ El servicio `report` (equipo de BI).** **Pediste la explicación.** Representa a otro equipo que necesita datos de pedidos **y** de inventario juntos, por ejemplo "pedidos con el stock actual de cada producto".
   - **En la versión ingenua** hace un `JOIN` directo entre tablas de dos equipos. Es rápido de escribir, pero cuando inventario renombra una columna interna, el reporte se rompe sin que nadie toque su código (experimento 2).
@@ -107,14 +112,14 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 
 ### Lab 07 · API Gateway
 
-- **L07-1 🟡 Spring Boot 4.0.9 + Spring Cloud 2025.1.4**, no 4.1. Spring Boot 4.1.2 ya es estable, pero Spring Cloud 2026.0 (el que lo soporta) está en RC2, y pediste solo releases. Quedó anotado en `docs/actualizaciones-futuras.md`.
-- **L07-2 🟢 Keycloak vive dentro del lab**, no en `infra/`: solo lo usa este lab por ahora. Si otro lab lo necesita (por ejemplo, el integrador), se mueve a `infra/`.
+- **L07-1 ✅ Spring Boot 4.0.9 + Spring Cloud 2025.1.4**, no 4.1. **Respuesta:** se hará en el futuro. Está en [`docs/actualizaciones-futuras.md`](docs/actualizaciones-futuras.md).
+- **L07-2 ✅ Keycloak.** **Respuesta:** dejarlo en `infra/`, con un comentario de dónde viviría si solo lo usara el lab 07. **Hecho:** [`infra/keycloak.yaml`](infra/keycloak.yaml) con el realm en `infra/keycloak/mercado-realm.json`. El comentario dice que hoy lo usan el lab 07 y el 22, y que si solo lo usara el 07 podría vivir dentro de su `compose.yaml`. Smoke del lab 07 reverificado.
 - **L07-3 🟢 Catálogo y pedidos guardan en memoria, sin Postgres.** El lab es sobre el borde (rutas, tokens, límites), no sobre persistencia. Así arranca más rápido y con menos RAM.
 - **L07-4 🟢 El catálogo es público y no usa OIDC**; pedidos sí, y valida el token **otra vez** (defensa en profundidad). Así se ve que no todo detrás del gateway necesita autenticación.
-- **L07-5 🟡 Tokens con el flujo *password*** (`token.sh`), porque es cómodo desde la terminal. Está marcado con ⚠️: una web real usa Authorization Code + PKCE. Cuando exista un frontend con login (labs 09 o 21), puede mostrarse el flujo real.
+- **L07-5 ✅ Tokens con el flujo *password*** (`token.sh`). **Respuesta:** está bien para este lab; cuando existan los otros labs, mostrar el flujo real. **Hecho:** el flujo real (Authorization Code + PKCE desde una web) va en el lab 22, que junta gateway, Keycloak y frontend. El lab 09 explica cómo sería con el BFF. Sobre "no veo L21": las decisiones del lab 21 se agregaron después de que leíste el archivo; están más abajo.
 - **L07-6 🟢 CORS se configura en Spring Security** del gateway, y no en el `globalcors` de Spring Cloud Gateway: la seguridad corre antes que el gateway, así que el *preflight* necesita resolverse ahí.
-- **L07-7 🟢 Con un servicio caído, el gateway responde `500`** (no `503`) y sin *fallback*. Lo dejé así a propósito: el circuit breaker y el *fallback* son del lab 11.
-- **L07-8 🟢 Los servicios exponen sus puertos en local** (8101 y 8102) solo para el experimento de "saltarse el gateway". En prod solo se expondría el gateway.
+- **L07-7 ✅ Con un servicio caído, el gateway responde `500`**, sin *fallback*. **Respuesta:** explicar dónde se profundiza. **Hecho:** el README del lab 07 apunta al lab 11 (timeout, retry, circuit breaker, bulkhead y fallback con una pasarela que falla a propósito) y nombra cómo se haría en el gateway: el filtro `CircuitBreaker` de Spring Cloud Gateway (Resilience4j) con una `fallbackUri`.
+- **L07-8 ✅ Los servicios exponen sus puertos en local** solo para el experimento de "saltarse el gateway". **Respuesta:** OK.
 
 ### Lab 08 · Service Registry y Discovery
 
@@ -129,17 +134,18 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 
 - **L09-1 🟢 Los tres servicios son en memoria y sin base**, con datos de ejemplo para `ana` y `beto`. El lab es sobre componer, no sobre persistir.
 - **L09-2 🟢 Pagos y envíos aceptan varios pedidos por llamada** (`?orderIds=a,b,c`) para evitar el N+1. Es un cambio de API pensado para la composición, y el README lo explica.
-- **L09-3 🟡 El cliente llega como parámetro** (`?customer=ana`), sin login. Está marcado con ⚠️: en prod sale de la sesión o del token (lab 07). Juntar este lab con Keycloak lo volvía más pesado sin agregar nada al patrón.
-- **L09-4 🟢 La web tiene un modo "Sin BFF"** (el navegador compone con 3 peticiones), además de "BFF en paralelo" y "BFF en cascada". Para eso nginx también expone `/api/*`, solo en este lab.
+- **L09-3 ✅ El cliente llega como parámetro** (`?customer=ana`), sin login. **Respuesta:** sin Keycloak (no agrega valor y hace el lab más pesado); dejar un comentario de cómo sería en prod. **Hecho:** el README del lab 09 tiene "Cómo sería el login en prod", con un diagrama: el BFF como *token handler* (Authorization Code + PKCE contra Keycloak, tokens guardados en el servidor, una cookie `HttpOnly` para el navegador, y el cliente sale del token). El mismo comentario está en el código, junto al endpoint del BFF.
+- **L09-4 ✅ La web tiene un modo "Sin BFF"**, además de "en paralelo" y "en cascada". **Respuesta:** perfecto.
 - **L09-5 🟢 La parte en Python usa `asyncio.gather` con `httpx`**, como decía el plan. El timeout es `asyncio.wait_for` por llamada, para que también funcione en los tests con `MockTransport`.
 - **L09-6 🟢 Pedidos es imprescindible (`503` si falla); pagos y envíos son opcionales** (respuesta parcial). La guía decía "respuesta parcial" en general; separé los dos casos porque sin pedidos no hay pantalla.
 
 ### Lab 10 · Observabilidad
 
-- **L10-1 🟡 Sin gateway ni frontend en la traza.** **Pediste más detalle.** Hoy la traza **empieza en `orders`**: el primer span es `POST /api/orders`, porque la petición la hace `curl` o `requests.http` directamente. El plan original decía "de React al gateway, a pedidos, a Kafka, a inventario", pero el gateway (lab 07) y el frontend de ese flujo todavía no existen.
-  - Mira la captura `labs/10-observabilidad/docs/traza.png`: arriba de todo está `orders POST /api/orders`, sin nada antes.
-  - Cuando exista el lab 07, se puede sumar el gateway: Spring Cloud Gateway propaga el `traceparent` y la traza empezaría un nivel más arriba.
-  - **Pendiente:** extender el lab 10 cuando exista el lab 07.
+- **L10-1 ✅ La traza empieza en el gateway.** **Respuesta:** mostrar un caso real cuando exista el lab 07. **Hecho:** el lab 10 tiene ahora un gateway (Spring Cloud Gateway) delante de `orders`, y la traza va de punta a punta: gateway → orders → Kafka → inventory.
+  - El gateway no tiene código de observabilidad: lo instrumenta el **agente de OpenTelemetry para Java** (`-javaagent`, versión 2.33.1), configurado solo con variables `OTEL_*`. Así la comparativa de instrumentación suma una tercera forma: Python a mano, Quarkus y Java con agente.
+  - El smoke manda el pedido por el gateway y exige sus spans en la traza. Captura nueva en `docs/traza.png`.
+  - Experimento nuevo: apagar el agente (`OTEL_JAVAAGENT_ENABLED=false`) y ver que el gateway desaparece de la traza.
+  - El navegador no aparece en la traza: instrumentarlo (RUM, por ejemplo Grafana Faro) es otro tema. La traza empieza en la puerta de entrada del backend, como en la mayoría de los sistemas.
 - **L10-2 ✅ Pedidos consulta el stock por HTTP antes de publicar.** Lo vas a revisar.
 - **L10-3 ✅ En Python la telemetría se configura a mano.** **Respuesta:** hacer un ejemplo con Quarkus (o Spring si no lo soporta) y una comparativa en un `.md`. **Hecho:** Quarkus lo soporta. Pedidos ahora tiene:
   - un span con `@WithSpan` (`orders.check-stock`, en `StockCheck`);
@@ -155,7 +161,7 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 - **L11-2 🟢 Tres caminos en pagos:** `/naive` (sin protección), `/naive-retry` (reintentos inmediatos) y el resiliente. Así se comparan con la misma pasarela.
 - **L11-3 🟢 El fallback deja el pago `PENDING_CONFIRMATION`** (`202`) y un reconciliador (`@Scheduled` cada 5 s) lo confirma después, con la misma `idempotencyKey`. El plan decía "para reintentarlo después"; el reconciliador es ese "después".
 - **L11-4 🟢 El circuit breaker ignora los rechazos de negocio (`402`) y los del bulkhead.** Lo segundo apareció con la carga de k6: con la JVM fría, el bulkhead rechazaba llamadas, eso contaba como falla y el circuito se abría sin que la pasarela fallara. Está contado en el README.
-- **L11-5 🟡 En Python, solo Retry con tenacity**, como decía el plan. tenacity no tiene circuit breaker ni bulkhead; el README nombra las alternativas (`pybreaker`, `asyncio.Semaphore`) sin implementarlas.
+- **L11-5 ✅ En Python, solo Retry con tenacity.** **Respuesta:** está bien; las alternativas (`pybreaker`, `asyncio.Semaphore`) quedan nombradas para saber que existen.
 - **L11-6 🟢 Las métricas son propias** (`payments_circuit_state`, `payments_outcomes_total`, `payments_provider_calls_total`) con el `Meter` de OpenTelemetry, en lugar de las métricas internas de SmallRye Fault Tolerance, porque así se leen directo en Prometheus. Sin un dashboard provisionado: el README da las consultas para Explore, y el gráfico del README sale de esos mismos datos.
 - **L11-7 🟢 k6 2.4.0 en un perfil `load`**, sin `latest`. El experimento de la caída de la pasarela se hace a mano (el README da los comandos).
 
@@ -168,11 +174,16 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 ### Lab 13 · Cache-Aside
 
 - **L13-1 🟢 La consulta "cara" se simula con `pg_sleep`** (200 ms, `DB_DELAY_MS`). Sin eso, Postgres responde en 1 ms y la caché no muestra su valor.
-- **L13-2 🟢 Dos servicios `catalog-1` y `catalog-2`** (la misma imagen) en lugar de `--scale`, para tener puertos fijos (8101 y 8111) y poder leer de cada instancia.
-- **L13-3 🟢 Las cachés están escritas a mano** (un mapa con TTL y Redis con `SET … EX`), en lugar de `@CacheResult` de Quarkus. Así se ve cada paso del cache-aside. El README nombra la alternativa.
-- **L13-4 🟢 El stampede se mitiga con un candado en Redis** (`SET NX PX`), que funciona entre instancias. *Refresh-ahead*, *stale-while-revalidate* y TTL con jitter solo se explican.
+- **L13-2 ✅ Dos servicios `catalog-1` y `catalog-2`** en lugar de `--scale`. **Respuesta:** OK: escalar no es el propósito del lab, así que puertos fijos.
+- **L13-3 ✅ Las cachés están escritas a mano.** **Preguntaste por qué no `@CacheResult`.** Para que se vea cada paso (buscar, si no está leer la base, guardar con TTL, invalidar), que con las anotaciones queda oculto. Pero vale la pena verlo también con anotaciones. **Hecho:** cuarto modo `?cache=annotated` ([`AnnotatedCache.java`](labs/13-cache-aside/services/catalog/src/main/java/com/mercadoinventos/catalog/AnnotatedCache.java)): la misma caché local con `@CacheResult` y `@CacheInvalidate`, con tests y en el smoke. Lo que se midió:
+  - Con k6: 0,8 ms de p95 y **4** consultas a la base, contra 13 de la caché local escrita a mano. `@CacheResult` trae su propio candado por clave.
+  - Ese candado es **de cada instancia**: 20 lecturas repartidas entre `catalog-1` y `catalog-2` hicieron 2 consultas (una por instancia), contra 1 con el candado en Redis.
+  - Cachea también lo que no existe (`Optional.empty()`), sin pedirlo.
+
+  El README tiene la tabla comparativa y cuándo conviene cada una.
+- **L13-4 ✅ El stampede se mitiga con un candado en Redis** (`SET NX PX`). **Pediste más detalle y dónde profundizar.** **Hecho:** el README del lab 13 tiene "El candado, paso a paso": un diagrama con dos lecturas que llegan a la vez, qué hace `NX` (solo una lo consigue), qué hace `PX 2000` (vence solo si la instancia muere), cómo esperan las demás y por qué está en Redis y no en memoria. También un ⚠️: el `DEL` borra el candado sea de quien sea, y la versión robusta usa un valor único y un script Lua. Para profundizar en el proyecto: `InventionReader.readThroughRedis`, `RedisCache.tryLock`, el test `stampedeProtectionLetsOnlyOneRequestRebuildAnExpiredKey` y el experimento 4.
 - **L13-5 🟢 La protección contra el stampede se cambia en caliente** (`PUT /admin/stampede-protection`), sin reiniciar, para comparar con y sin.
-- **L13-6 🟡 Sin caché negativa** (los SKU que no existen no se cachean). Está marcado con ⚠️ y es el ejercicio.
+- **L13-6 ✅ Sin caché negativa.** **Preguntaste por el círculo amarillo.** Es 🟡 porque es un riesgo real que dejé a propósito: el lab no cachea "lo que no existe", así que alguien que pida 1000 SKUs inexistentes provoca 1000 consultas caras a la base. En prod se cachea también el "no existe", con un TTL corto. Lo dejé como ejercicio, y el ⚠️ del README avisa. Novedad: el modo `@CacheResult` (L13-3) sí lo cachea, sin pedirlo.
 
 ### Lab 14 · CQRS
 
@@ -180,15 +191,14 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 - **L14-2 🟢 Demora artificial de 1,5 s por evento** en el proyector (`PROJECTION_DELAY_MS`), para que la consistencia eventual se vea en la web. Sin ella, la vista se actualiza en milisegundos y las tres técnicas parecen iguales.
 - **L14-3 🟢 El proyector y la API de lectura son la misma imagen con dos comandos**, en procesos separados: si el proyector cae, la API sigue respondiendo.
 - **L14-4 🟢 Reconstruir = cambiar `PROJECTION_VERSION`.** El proyector vacía la colección y vuelve al offset 0 (con un `ConsumerRebalanceListener`). Primero lo hice con un consumer group por versión, pero al **volver** a una versión anterior, ese grupo ya tenía offsets guardados y la vista quedaba vacía para siempre. El *blue/green* (otra colección) solo se explica.
-- **L14-5 🟢 Los consumidores Python manejan `SIGTERM`.** Sin handler, Python como PID 1 lo ignora, Docker lo mata a los 10 s y el consumidor no sale del consumer group (no se podía rebobinar). Está contado en el README.
-- **L14-6 🟡 `orders` guarda y después publica (escritura doble)**, como en el lab 06. Está marcado con ⚠️ y apunta al lab 15. No usé el outbox aquí para que el lab trate de una sola cosa.
+- **L14-5 ✅ Los consumidores Python manejan `SIGTERM`.** **Preguntaste cómo se podría solucionar.** Ya está solucionado en el lab: 3 líneas con `add_signal_handler(SIGTERM, …)` hacen que el proceso cierre el consumidor y salga del consumer group al instante. **Hecho:** el README del lab 14 ahora compara las alternativas: `init: true` (o `tini`) solo evita la espera de 10 s, pero Python muere sin correr el `finally` y no sale del grupo igual; alargar `stop_grace_period` o bajar `session.timeout.ms` tampoco lo resuelven. El handler es el arreglo de fondo.
+- **L14-6 ✅ `orders` guarda y después publica (escritura doble).** **Preguntaste por el círculo amarillo.** Es 🟡 porque es un defecto real aceptado a propósito: si `orders` muere entre guardar y publicar, el pedido existe pero el historial **nunca** lo muestra, y reconstruir la vista no ayuda porque el evento no está en Kafka. **Hecho:** el README del lab 14 explica la solución en 3 pasos: guardar el evento en una tabla `outbox` en la misma transacción que el pedido, publicarlo con un proceso aparte (polling o Debezium, lab 15), y la proyección ya es idempotente para tolerar los repetidos.
 - **L14-7 🟢 El historial guarda el nombre del invento del momento de la compra.** Si el catálogo cambia el nombre, el historial no se actualiza: para un historial es lo correcto, y el README lo explica en "Datos duplicados".
 
 ### Lab 15 · Transactional Outbox
 
 - **L15-1 🟢 Un solo servicio con tres modos** (`OUTBOX_MODE=naive|polling|cdc`) para comparar dual write, polling y CDC con el mismo código de negocio.
-- **L15-2 🟡 Debezium se conecta con el superusuario `admin`** para no tener que dar `REPLICATION` al usuario `orders` desde `infra/`. Está marcado con ⚠️ en el README.
-  **Pregunta:** ¿prefieres un usuario de replicación dedicado, aunque complique `infra/postgres/init`?
+- **L15-2 ✅ Debezium se conecta con el superusuario `admin`.** **Preguntaste por qué el signo y si un usuario dedicado agregaría valor.** Es 🟡 porque un superusuario puede leer y cambiar todo: si se filtra la clave del conector, se filtra la base. En prod, un usuario dedicado agrega mucho valor (mínimo privilegio). Para aprender el patrón, poco. **Decisión (tu preferencia):** sin usuario dedicado, para no complicar `infra/postgres/init`, que comparten todos los labs. **Hecho:** el README del lab 15 muestra el SQL del usuario de prod (`REPLICATION`, `SELECT` solo sobre la outbox, publicación creada por el administrador) y qué cambiar en el conector.
 - **L15-3 🟢 Debezium 3.6.3.Final desde `quay.io`** (gracias al permiso de red que me diste), con `snapshot.mode=no_data`. Así, al activar CDC después de usar polling, no se republican los eventos viejos.
 - **L15-4 🟢 `wal_level=logical` va en `compose.override.yaml`.** Un archivo que incluye otro no puede redefinir sus servicios, pero un overlay sí puede modificarlos.
 
