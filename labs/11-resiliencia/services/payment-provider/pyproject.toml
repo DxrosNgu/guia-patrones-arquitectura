@@ -1,0 +1,23 @@
+[project]
+name = "payment-provider"
+version = "1.0.0"
+description = "Mercado de Inventos · 11-resiliencia · pasarela de pagos simulada"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi==0.163.1",
+    "uvicorn==0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.2.0",
+    "httpx2==2.16.1",
+]
+
+[tool.uv]
+# Es una aplicación, no una librería: uv no la instala como paquete.
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

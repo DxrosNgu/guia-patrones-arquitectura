@@ -330,7 +330,7 @@ flowchart TD
 | [08](labs/08-service-discovery/) | Service Registry · Client/Server-side Discovery | Instancias dinámicas | Pedidos encuentra las instancias de inventario | Quarkus (Stork) · FastAPI | Consul | ✅ |
 | [09](labs/09-bff/) | BFF · API Composition | Una pantalla necesita datos de N servicios | "Mis pedidos" en la web | FastAPI · React | — | ✅ |
 | [10](labs/10-observabilidad/) | Health Check API · Distributed Tracing · Log Aggregation · Metrics | No se ve dónde falla una petición distribuida | Seguir un pedido de orders a inventory pasando por Kafka | Quarkus · FastAPI | Grafana LGTM · Kafka | ✅ |
-| 11 | Timeout · Retry · Circuit Breaker · Bulkhead · Fallback | Fallas en cascada por una dependencia lenta | Pasarela de pagos externa inestable | Quarkus · FastAPI | Grafana LGTM | 🗓️ |
+| [11](labs/11-resiliencia/) | Timeout · Retry · Circuit Breaker · Bulkhead · Fallback | Fallas en cascada por una dependencia lenta | Pasarela de pagos externa inestable | Quarkus · FastAPI | Grafana LGTM | ✅ |
 | [12](labs/12-idempotencia/) | Idempotency Key · Idempotent Consumer | Reintentos que cobran dos veces | Doble clic en "Pagar" y mensajes duplicados | Quarkus · FastAPI | Kafka | ✅ |
 | 13 | Cache-Aside | BD saturada por lecturas | Catálogo muy consultado | Quarkus | Redis | 🗓️ |
 | 14 | CQRS | El modelo de escritura no sirve para consultar | Historial de pedidos con datos de 3 servicios | Quarkus · FastAPI · React | Kafka · MongoDB | 🗓️ |
@@ -510,6 +510,8 @@ PostgreSQL está en todos los labs, así que no figura en la columna *Infra extr
 ### Módulo 4 · Resiliencia
 
 #### 11 · Timeout, Retry, Circuit Breaker, Bulkhead y Fallback
+
+✅ [Ir al lab](labs/11-resiliencia/)
 
 - **Patrones:** Timeout · Retry con backoff exponencial y jitter · Circuit Breaker · Bulkhead · Fallback.
 - **Problema:** una dependencia lenta agota hilos y conexiones, y la falla se propaga en cascada a servicios que no tenían nada que ver.
