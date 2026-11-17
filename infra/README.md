@@ -22,6 +22,7 @@ services:
 | `kafka.yaml` | `kafka`, `kafka-ui` | 9092, 8090 | 06 en adelante |
 | `redis.yaml` | `redis` | 6379 | 07, 13 |
 | `mongodb.yaml` | `mongodb` | 27017 | 14 |
+| `keycloak.yaml` | `keycloak`, con el realm `mercado` de [`keycloak/mercado-realm.json`](keycloak/mercado-realm.json) | 8180 | 07, 22 |
 | `observability.yaml` | `lgtm` (Grafana, Tempo, Loki, métricas) | 3001, 4317, 4318 | 10 en adelante |
 | `optional/kafka-zookeeper.yaml` | `zookeeper`, `kafka` (3.9), `kafka-ui` | 9092, 8090 | Opcional: reemplaza a `kafka.yaml` para ver el modo ZooKeeper ([explicación](../docs/kafka-kraft-vs-zookeeper.md)) |
 

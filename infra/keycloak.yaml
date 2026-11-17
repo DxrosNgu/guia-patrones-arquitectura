@@ -1,0 +1,33 @@
+# Keycloak: el servidor de identidad (OpenID Connect). Emite y firma los tokens del realm "mercado".
+#
+# Hoy lo usa el lab 07 (API Gateway); el lab 22 (integrador) también lo va a usar.
+# Si solo lo usara el lab 07, podría vivir dentro de labs/07-api-gateway/compose.yaml (así estuvo
+# al principio): un bloque va a infra/ cuando lo comparte más de un lab.
+#
+# ⚠️ start-dev: sin TLS, base H2 en memoria y el usuario admin/admin. Suficiente para aprender.
+#    En prod: "start" con TLS, una base Postgres propia y credenciales desde un secreto.
+services:
+  keycloak:
+    image: keycloak/keycloak:26.8.2
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HTTP_PORT: "8080"
+      # Los tokens SIEMPRE salen con iss=http://localhost:8180/realms/mercado, aunque se pidan
+      # por la red interna. Así gateway y servicios validan contra un único emisor.
+      KC_HOSTNAME: http://localhost:${KEYCLOAK_PORT:-8180}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      # El realm (usuarios, roles y clientes de ejemplo) se importa al arrancar.
+      - ./keycloak/mercado-realm.json:/opt/keycloak/data/import/mercado-realm.json:ro
+    ports:
+      - "${KEYCLOAK_PORT:-8180}:8080"
+    healthcheck:
+      # La imagen no trae curl: se habla HTTP "a mano" con /dev/tcp de bash.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
