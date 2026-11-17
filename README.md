@@ -338,7 +338,7 @@ flowchart TD
 | [16](labs/16-saga-coreografia/) | Saga (coreografía) | Una transacción de negocio entre 4 BD | Flujo de compra completo con compensaciones | Quarkus · FastAPI · React | Kafka | ✅ |
 | [17](labs/17-saga-orquestacion/) | Saga (orquestación) | Lo mismo, con el flujo explícito y visible | El mismo flujo con orquestador | Quarkus · FastAPI · React | Kafka | ✅ |
 | [18](labs/18-event-sourcing/) | Event Sourcing | El estado actual pierde la historia | Monedero cuyo saldo se deriva de eventos | Quarkus | — | ✅ |
-| 19 | Anti-Corruption Layer | El modelo de un legado contamina el tuyo | Integración con un transportista legado (XML) | FastAPI | — | 🗓️ |
+| [19](labs/19-anti-corruption-layer/) | Anti-Corruption Layer | El modelo de un legado contamina el tuyo | Integración con un transportista legado (XML) | FastAPI | — | ✅ |
 | 20 | Strangler Fig | Reescribir todo de una vez falla | Migrar la tienda legada ruta por ruta | Spring Cloud Gateway · Quarkus · FastAPI | — | 🗓️ |
 | 21 | Micro-frontends | Un frontend, varios equipos | Shell más remotos de catálogo y pedidos | React | — | 🗓️ |
 | 22 | Proyecto integrador | Decidir qué patrón usar dónde | Todo junto en los 3 ambientes | Todos | Todo | 🗓️ |
@@ -668,6 +668,8 @@ Una saga no se aprende solo con el camino feliz. Estos son los casos que reprodu
 ### Módulo 6 · Evolución y sistemas legados
 
 #### 19 · Anti-Corruption Layer
+
+✅ [Ir al lab](labs/19-anti-corruption-layer/)
 
 - **Patrones:** Anti-Corruption Layer · Adapter / Translator.
 - **Problema:** al integrarte con un sistema legado o externo, su modelo termina contaminando el tuyo.

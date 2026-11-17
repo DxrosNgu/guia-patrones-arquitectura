@@ -1,0 +1,25 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Lab 19 · Anti-Corruption Layer
+#
+#   docker compose up --build -d
+#   docker compose exec shipping python -m app.acl.contract_check   → ¿el legado sigue hablando como esperamos?
+#
+#   shipping (FastAPI) ── ACL: adaptador + traductor ──▶ legacy-carrier (XML, ISO-8859-1, códigos crípticos)
+#   shipping /api/naive/... ── sin ACL ─────────────────▶ legacy-carrier
+# ─────────────────────────────────────────────────────────────────────────
+name: lab19-anti-corruption-layer
+
+services:
+  # El sistema legado del transportista (SIMULADO). No es parte del patrón: es lo que el patrón aísla.
+  legacy-carrier:
+    build: ./services/legacy-carrier
+    image: mercado/lab19-legacy-carrier:1.0.0
+
+  shipping:
+    build: ./services/shipping
+    image: mercado/lab19-shipping:1.0.0
+    environment:
+      LEGACY_CARRIER_URL: http://legacy-carrier:8000
+    depends_on:
+      legacy-carrier:
+        condition: service_healthy
