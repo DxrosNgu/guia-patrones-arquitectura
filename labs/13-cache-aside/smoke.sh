@@ -19,7 +19,8 @@ reset_stats() { for c in $C1 $C2; do curl -fsS -o /dev/null -X PUT "$c/admin/sta
 db_queries() { echo $(( $(curl -fsS "$C1/api/stats" | python3 -c "import json,sys; print(json.load(sys.stdin)['dbQueries'])") + $(curl -fsS "$C2/api/stats" | python3 -c "import json,sys; print(json.load(sys.stdin)['dbQueries'])") )); }
 
 wait_for "$C1/q/health/ready"; wait_for "$C2/q/health/ready"
-for s in INV-001 INV-002 INV-003; do evict $s; done
+for s in INV-001 INV-002 INV-003 INV-004; do evict $s; done
+curl -fsS -o /dev/null -X DELETE "$C2/admin/cache/INV-004"
 curl -fsS -o /dev/null -X DELETE "$C2/admin/cache/INV-002"
 
 read -r cache ms p <<<"$(read_ $C1 INV-003 none)"
@@ -28,6 +29,10 @@ ok "sin caché → la consulta cara cada vez: ${ms} ms"
 read -r cache ms1 p <<<"$(read_ $C1 INV-003 redis)"; read -r cache2 ms2 p <<<"$(read_ $C1 INV-003 redis)"
 [ "$cache" = MISS ] && [ "$cache2" = HIT ] && [ "$ms2" -lt 50 ] || fail "Redis: $cache $ms1 ms → $cache2 $ms2 ms"
 ok "Redis → MISS ${ms1} ms (base + guardar), luego HIT ${ms2} ms"
+
+read -r cache ms1 p <<<"$(read_ $C2 INV-004 annotated)"; read -r cache2 ms2 p <<<"$(read_ $C2 INV-004 annotated)"
+[ "$cache" = MISS ] && [ "$cache2" = HIT ] && [ "$ms2" -lt 50 ] || fail "@CacheResult: $cache $ms1 ms → $cache2 $ms2 ms"
+ok "@CacheResult (?cache=annotated) → la misma caché local con anotaciones: MISS ${ms1} ms, luego HIT ${ms2} ms"
 
 price $C1 INV-003 120.00
 read -r cache ms p <<<"$(read_ $C2 INV-003 redis)"
