@@ -327,7 +327,7 @@ flowchart TD
 | [05](labs/05-microservicios/) | Microservicios · Database per Service | Equipos y despliegues acoplados por una BD compartida | Separar pedidos, inventario y pagos | Quarkus · FastAPI | — | ✅ |
 | [06](labs/06-sync-vs-async/) | Messaging · Pub/Sub · Competing Consumers · Dead Letter Channel | Acoplamiento temporal: si uno cae, caen todos | Confirmar un pedido: REST vs. evento | Quarkus · FastAPI | Kafka | ✅ |
 | [07](labs/07-api-gateway/) | API Gateway · Access Token · Rate Limiting | El frontend conoce N servicios; auth repetida | Punto de entrada único con JWT y límite por usuario | Spring Cloud Gateway · Quarkus | Keycloak · Redis | ✅ |
-| 08 | Service Registry · Client/Server-side Discovery | Instancias dinámicas | Pedidos encuentra las instancias de inventario | Quarkus (Stork) · FastAPI | Consul | 🗓️ |
+| [08](labs/08-service-discovery/) | Service Registry · Client/Server-side Discovery | Instancias dinámicas | Pedidos encuentra las instancias de inventario | Quarkus (Stork) · FastAPI | Consul | ✅ |
 | 09 | BFF · API Composition | Una pantalla necesita datos de N servicios | "Mis pedidos" en la web | FastAPI · React | — | 🗓️ |
 | [10](labs/10-observabilidad/) | Health Check API · Distributed Tracing · Log Aggregation · Metrics | No se ve dónde falla una petición distribuida | Seguir un pedido de orders a inventory pasando por Kafka | Quarkus · FastAPI | Grafana LGTM · Kafka | ✅ |
 | 11 | Timeout · Retry · Circuit Breaker · Bulkhead · Fallback | Fallas en cascada por una dependencia lenta | Pasarela de pagos externa inestable | Quarkus · FastAPI | Grafana LGTM | 🗓️ |
@@ -461,6 +461,8 @@ PostgreSQL está en todos los labs, así que no figura en la columna *Infra extr
 - **Rómpelo:** haz llamadas sin token (`401`), con un token sin el rol necesario (`403`) y en ráfaga hasta superar el límite (`429`). Después tumba un servicio que está detrás del gateway.
 
 #### 08 · Service Registry y Discovery
+
+✅ [Ir al lab](labs/08-service-discovery/)
 
 - **Patrones:** Service Registry · Client-side Discovery · Server-side Discovery · Self Registration.
 - **Problema:** las instancias aparecen y desaparecen al escalar, y sus IPs cambian.
