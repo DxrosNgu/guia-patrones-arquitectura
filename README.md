@@ -328,7 +328,7 @@ flowchart TD
 | [06](labs/06-sync-vs-async/) | Messaging · Pub/Sub · Competing Consumers · Dead Letter Channel | Acoplamiento temporal: si uno cae, caen todos | Confirmar un pedido: REST vs. evento | Quarkus · FastAPI | Kafka | ✅ |
 | [07](labs/07-api-gateway/) | API Gateway · Access Token · Rate Limiting | El frontend conoce N servicios; auth repetida | Punto de entrada único con JWT y límite por usuario | Spring Cloud Gateway · Quarkus | Keycloak · Redis | ✅ |
 | [08](labs/08-service-discovery/) | Service Registry · Client/Server-side Discovery | Instancias dinámicas | Pedidos encuentra las instancias de inventario | Quarkus (Stork) · FastAPI | Consul | ✅ |
-| 09 | BFF · API Composition | Una pantalla necesita datos de N servicios | "Mis pedidos" en la web | FastAPI · React | — | 🗓️ |
+| [09](labs/09-bff/) | BFF · API Composition | Una pantalla necesita datos de N servicios | "Mis pedidos" en la web | FastAPI · React | — | ✅ |
 | [10](labs/10-observabilidad/) | Health Check API · Distributed Tracing · Log Aggregation · Metrics | No se ve dónde falla una petición distribuida | Seguir un pedido de orders a inventory pasando por Kafka | Quarkus · FastAPI | Grafana LGTM · Kafka | ✅ |
 | 11 | Timeout · Retry · Circuit Breaker · Bulkhead · Fallback | Fallas en cascada por una dependencia lenta | Pasarela de pagos externa inestable | Quarkus · FastAPI | Grafana LGTM | 🗓️ |
 | [12](labs/12-idempotencia/) | Idempotency Key · Idempotent Consumer | Reintentos que cobran dos veces | Doble clic en "Pagar" y mensajes duplicados | Quarkus · FastAPI | Kafka | ✅ |
@@ -475,6 +475,8 @@ PostgreSQL está en todos los labs, así que no figura en la columna *Infra extr
 - **Cuándo no:** en Kubernetes casi nunca necesitas un registry propio.
 
 #### 09 · Backend for Frontend y API Composition
+
+✅ [Ir al lab](labs/09-bff/)
 
 - **Patrones:** Backend for Frontend (BFF) · API Composition.
 - **Problema:** la pantalla "Mis pedidos" necesita datos de pedidos, pagos y envíos. El navegador hace N llamadas, recibe más datos de los que necesita y tiene que manejar los errores parciales.
