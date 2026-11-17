@@ -1,0 +1,6 @@
+# Ambiente LOCAL (Compose lo carga solo).
+services:
+  legacy-carrier:
+    ports: ["8121:8000"]
+  shipping:
+    ports: ["8105:8000"]

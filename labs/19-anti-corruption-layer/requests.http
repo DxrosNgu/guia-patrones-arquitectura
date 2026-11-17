@@ -1,0 +1,59 @@
+### Lab 19 · Anti-Corruption Layer
+@s = http://localhost:8105
+@legacy = http://localhost:8121
+
+### CON ACL: crear un envío en el idioma del dominio (kg, distrito, dirección normal)
+# @name created
+POST {{s}}/api/shipments
+Content-Type: application/json
+
+{"orderId": "o-1", "weightKg": "2.00", "serviceLevel": "EXPRESS", "district": "Miraflores", "address": "Av. Larco 1150, dpto. 302"}
+
+### CON ACL: consultar (el adaptador pregunta al legado y traduce EST → status)
+GET {{s}}/api/shipments/{{created.response.body.id}}
+
+### CON ACL: destino sin cobertura → 422 DESTINATION_NOT_COVERED
+POST {{s}}/api/shipments
+Content-Type: application/json
+
+{"orderId": "o-2", "weightKg": "2.00", "serviceLevel": "STANDARD", "district": "Arequipa", "address": "Calle Mercaderes 100"}
+
+### CON ACL: demasiado pesado → 422 WEIGHT_LIMIT_EXCEEDED (el legado respondió COD_RET=07)
+POST {{s}}/api/shipments
+Content-Type: application/json
+
+{"orderId": "o-3", "weightKg": "60.00", "serviceLevel": "ECONOMY", "district": "Barranco", "address": "Av. Grau 300"}
+
+### SIN ACL: quien llama tiene que hablar como el legado (libras con coma, UBIGEO, EXP)
+# @name naive
+POST {{s}}/api/naive/shipments
+Content-Type: application/json
+
+{"orderId": "o-4", "TPO_SRV": "EXP", "PESO_LB": "4,41", "UBIGEO": "150122", "DIR": "AV LARCO 1150"}
+
+### SIN ACL: la respuesta trae EST, FEC_EST, COD_RET...
+GET {{s}}/api/naive/shipments/{{naive.response.body.NRO_GUIA}}
+
+### SIN ACL: un error llega como HTTP 200 con COD_RET=07
+POST {{s}}/api/naive/shipments
+Content-Type: application/json
+
+{"orderId": "o-5", "TPO_SRV": "EXP", "PESO_LB": "132,28", "UBIGEO": "150122", "DIR": "AV LARCO 1150"}
+
+### LEGADO directo: el XML tal cual (ISO-8859-1)
+GET {{legacy}}/servicios/consulta?guia={{naive.response.body.NRO_GUIA}}
+
+### SIMULADOR: avanzar el estado de una guía
+POST {{legacy}}/admin/guias/{{created.response.body.trackingCode}}/avanzar
+
+### SIMULADOR: el legado sube a la v2 (EST=3 pasa a ser 7, y aparece 8)
+PUT {{legacy}}/admin/version
+Content-Type: application/json
+
+{"version": 2}
+
+### SIMULADOR: volver a la v1
+PUT {{legacy}}/admin/version
+Content-Type: application/json
+
+{"version": 1}

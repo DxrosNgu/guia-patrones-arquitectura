@@ -218,3 +218,13 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 - **L18-5 🟢 `PUT /admin/think-time` abre una ventana entre leer y guardar** para que la concurrencia se vea siempre igual (en el smoke y en los tests). Sin ella, dos peticiones de curl casi nunca se cruzan.
 - **L18-6 🟢 Sin frontend**: el catálogo decía solo Quarkus. La historia se ve con `GET /events`.
 - **L18-7 🟢 Jackson lee los decimales como `BigDecimal`** (`USE_BIG_DECIMAL_FOR_FLOATS` y nodos exactos). Sin eso, 500.00 se convierte en 5E+2 o en un `double`.
+
+### Lab 19 · Anti-Corruption Layer
+
+- **L19-1 🟢 El legado es un simulador FastAPI** ("Rápido SAC"), con las rarezas típicas: XML en ISO-8859-1, códigos crípticos, libras con coma decimal, fechas `dd/MM/yy`, UBIGEO y errores con HTTP 200. Trae una API de administración para avanzar estados y cambiar de versión, que el real no tendría.
+- **L19-2 🟢 El "legado cambia un código" es la versión 2 del simulador** (`PUT /admin/version`): `EST=3` pasa a `7` y aparece `8`. El arreglo (2 filas en el traductor) **no** viene hecho: es el paso 4 del "Rómpelo". Lo probé antes de escribirlo en el README.
+- **L19-3 🟢 Un código desconocido se convierte en `UNKNOWN` + `WARNING`**, en lugar de un error 500 o de dejar pasar el código. Es una decisión de diseño explicada en el README.
+- **L19-4 🟢 Tests de contrato en dos niveles:** respuestas guardadas del legado (`tests/fixtures`, en ISO-8859-1) y un `contract_check` ejecutable contra el legado vivo. No usé Pact: para un legado que no va a correr tests de proveedor, alcanza con esto.
+- **L19-5 🟢 La versión ingenua vive en el mismo servicio** (`/api/naive/shipments`), y el frontend que la consume solo aparece como un fragmento de TypeScript en el README. El catálogo decía solo FastAPI.
+- **L19-6 🟢 Los envíos se guardan en memoria**, sin Postgres. El lab trata de la integración.
+- **L19-7 🟢 `defusedxml` para leer XML** (también en el simulador). `xml.etree` no se protege de entidades maliciosas, y un XML que viene de afuera es justamente lo que un ACL recibe.
