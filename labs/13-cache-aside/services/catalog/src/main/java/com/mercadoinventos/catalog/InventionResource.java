@@ -34,7 +34,7 @@ public class InventionResource {
     @ConfigProperty(name = "catalog.instance", defaultValue = "catalog")
     String instance;
 
-    /** ?cache=none | local | redis. Las cabeceras X-Cache y X-Instance dicen qué pasó y quién respondió. */
+    /** ?cache=none | local | redis | annotated. Las cabeceras X-Cache y X-Instance dicen qué pasó y quién respondió. */
     @GET
     @Path("api/inventions/{sku}")
     public Response get(@PathParam("sku") String sku, @QueryParam("cache") @DefaultValue("redis") String cache) {
@@ -42,7 +42,7 @@ public class InventionResource {
         try {
             mode = InventionReader.Mode.valueOf(cache.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new BadRequestException("cache debe ser none, local o redis");
+            throw new BadRequestException("cache debe ser none, local, redis o annotated");
         }
         InventionReader.Read read = reader.read(sku, mode);
         Invention invention = read.invention().orElseThrow(() -> new NotFoundException("No existe " + sku));
