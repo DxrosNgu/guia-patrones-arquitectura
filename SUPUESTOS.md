@@ -228,3 +228,13 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 - **L19-5 🟢 La versión ingenua vive en el mismo servicio** (`/api/naive/shipments`), y el frontend que la consume solo aparece como un fragmento de TypeScript en el README. El catálogo decía solo FastAPI.
 - **L19-6 🟢 Los envíos se guardan en memoria**, sin Postgres. El lab trata de la integración.
 - **L19-7 🟢 `defusedxml` para leer XML** (también en el simulador). `xml.etree` no se protege de entidades maliciosas, y un XML que viene de afuera es justamente lo que un ACL recibe.
+
+### Lab 20 · Strangler Fig
+
+- **L20-1 🟢 Las rutas del gateway están en Java (`Routes.java`) y no en YAML**: sus predicados leen el estado de la migración en cada petición, y ese estado se cambia con `PUT /admin/migration`, sin reiniciar. El README nombra el predicado `Weight` de Spring Cloud Gateway como alternativa por configuración.
+- **L20-2 🟢 El canary sortea cada petición**, no cada cliente. Así se ve el problema de la ventana de sincronización (experimento 4), y el canary pegajoso queda como ejercicio.
+- **L20-3 🟢 El catálogo se migra con una copia inicial** porque en el lab es de solo lectura. Los pedidos se sincronizan en los dos sentidos cada segundo, con rangos de ids separados (1001… y 500001…) y copias idempotentes.
+- **L20-4 🟢 Al legado se le agregaron `/internal/orders` y la columna `origen`.** Sin tocarlo, la única forma de sincronizar sería leer su base o usar CDC (lab 15), y el lab sumaría Debezium.
+- **L20-5 🟡 El estado de la migración vive en la memoria del gateway**, sin autenticación (⚠️ en el README). Con varias réplicas del gateway no serviría.
+  **Pregunta:** ¿quieres que el estado salga de Consul KV o de un archivo de configuración con refresco, para mostrar cómo se haría con varias réplicas?
+- **L20-6 🟢 Sin frontend**: el catálogo nombraba gateway, Quarkus y FastAPI. Lo que se migra se ve con las cabeceras `X-Route` y `X-Served-By`.

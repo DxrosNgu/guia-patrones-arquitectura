@@ -1,0 +1,65 @@
+### Lab 20 · Strangler Fig
+@gw = http://localhost:8080
+@legacy = http://localhost:8120
+@orders = http://localhost:8102
+
+### Estado de la migración
+GET {{gw}}/admin/migration
+
+### Etapa 1: proxy transparente (todo al legado)
+PUT {{gw}}/admin/migration/stage/1
+
+### Etapa 2: /api/catalog al servicio nuevo
+PUT {{gw}}/admin/migration/stage/2
+
+### Etapa 3: canary, 10 % de /api/orders al servicio nuevo
+PUT {{gw}}/admin/migration/stage/3
+
+### Etapa 4: todo /api/orders al servicio nuevo
+PUT {{gw}}/admin/migration/stage/4
+
+### Etapa 5: el legado ya no recibe tráfico
+PUT {{gw}}/admin/migration/stage/5
+
+### Pesos a mano: 50 % de los pedidos al servicio nuevo
+PUT {{gw}}/admin/migration
+Content-Type: application/json
+
+{"ordersToNewPercent": 50}
+
+### ROLLBACK inmediato: todos los pedidos de vuelta al legado
+PUT {{gw}}/admin/migration
+Content-Type: application/json
+
+{"ordersToNewPercent": 0}
+
+### Por el gateway (mira las cabeceras X-Route y X-Served-By)
+GET {{gw}}/api/catalog/products
+
+### Crear un pedido por el gateway: lo atiende el legado o el servicio nuevo, según la etapa
+# @name placed
+POST {{gw}}/api/orders
+Content-Type: application/json
+
+{"customer": "ana", "sku": "INV-001", "quantity": 1}
+
+### El mismo pedido, en el legado directamente
+GET {{legacy}}/api/orders/{{placed.response.body.id}}
+
+### El mismo pedido, en el servicio nuevo directamente
+GET {{orders}}/api/orders/{{placed.response.body.id}}
+
+### Historial de ana por el gateway
+GET {{gw}}/api/orders?customer=ana
+
+### Sincronización entre el legado y el servicio nuevo
+GET {{orders}}/admin/sync
+
+### Apagar la sincronización (antes de apagar el legado)
+PUT {{orders}}/admin/sync
+Content-Type: application/json
+
+{"enabled": false}
+
+### Las rutas activas del gateway (Actuator)
+GET {{gw}}/actuator/gateway/routes
