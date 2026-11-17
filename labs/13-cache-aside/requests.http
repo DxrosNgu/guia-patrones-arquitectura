@@ -1,0 +1,36 @@
+### Lab 13 · Cache-Aside
+@c1 = http://localhost:8101
+@c2 = http://localhost:8111
+
+### Sin caché: la consulta cara cada vez (~200 ms)
+GET {{c1}}/api/inventions/INV-001?cache=none
+
+### Redis: MISS la primera vez, HIT las siguientes (mira X-Cache)
+GET {{c1}}/api/inventions/INV-001?cache=redis
+
+### Caché local de catalog-1
+GET {{c1}}/api/inventions/INV-002?cache=local
+
+### Caché local de catalog-2
+GET {{c2}}/api/inventions/INV-002?cache=local
+
+### Cambiar un precio (invalida Redis y la caché local de catalog-1)
+PUT {{c1}}/api/inventions/INV-002/price
+Content-Type: application/json
+
+{"price": 79}
+
+### Simular que la clave venció
+DELETE {{c1}}/admin/cache/INV-001
+
+### Apagar el candado contra el stampede
+PUT {{c1}}/admin/stampede-protection
+Content-Type: application/json
+
+{"enabled": false}
+
+### Consultas que recibió la base desde catalog-1
+GET {{c1}}/api/stats
+
+### Poner el contador en cero
+PUT {{c1}}/admin/stats/reset

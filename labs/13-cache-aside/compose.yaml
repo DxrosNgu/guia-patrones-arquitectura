@@ -1,0 +1,61 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Lab 13 · Cache-Aside
+#
+#   catalog-1 ─┐                    ┌─ caché local (en la memoria de cada instancia)
+#              ├─► Postgres (lento) ┤
+#   catalog-2 ─┘                    └─ Redis (caché compartida)
+#
+#   docker compose up --build -d
+#   CACHE=none  docker compose --profile load run --rm k6    → latencia sin caché
+#   CACHE=redis docker compose --profile load run --rm k6    → latencia con Redis
+# ─────────────────────────────────────────────────────────────────────────
+name: lab13-cache-aside
+
+include:
+  - ../../infra/postgres.yaml
+  - ../../infra/redis.yaml
+
+x-catalog: &catalog
+  build: ./services/catalog
+  image: mercado/lab13-catalog:1.0.0
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+x-catalog-env: &catalog-env
+  QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/catalog
+  QUARKUS_DATASOURCE_USERNAME: catalog
+  QUARKUS_DATASOURCE_PASSWORD: catalog
+  REDIS_URL: redis://redis:6379
+  DB_DELAY_MS: ${DB_DELAY_MS:-200}
+  CACHE_TTL: ${CACHE_TTL:-30S}
+  STAMPEDE_PROTECTION: ${STAMPEDE_PROTECTION:-true}
+
+services:
+  # Dos instancias del MISMO catálogo: para ver qué pasa con una caché local cuando escalas.
+  catalog-1:
+    <<: *catalog
+    environment:
+      <<: *catalog-env
+      INSTANCE_NAME: catalog-1
+
+  catalog-2:
+    <<: *catalog
+    environment:
+      <<: *catalog-env
+      INSTANCE_NAME: catalog-2
+
+  k6:
+    profiles: [load]
+    image: grafana/k6:2.4.0
+    volumes:
+      - ./load:/scripts:ro
+    environment:
+      BASE_URL: http://catalog-1:8080
+      CACHE: ${CACHE:-redis}
+    command: ["run", "/scripts/catalog.js"]
+    depends_on:
+      catalog-1:
+        condition: service_healthy
