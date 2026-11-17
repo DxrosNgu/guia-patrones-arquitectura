@@ -1,0 +1,15 @@
+### Lab 21 · Micro-frontends
+# No hay API: son archivos que pide el navegador. Estas peticiones muestran cómo llegan.
+@shell = http://localhost:3000
+
+### La página del shell (cualquier ruta de la app devuelve la misma)
+GET {{shell}}/pedidos/P-42
+
+### El remoteEntry del catálogo: el "índice" de lo que expone. Cache-Control: no-cache
+GET {{shell}}/remotes/catalog/remoteEntry.js
+
+### El remoteEntry de pedidos (expone ./App y ./CartBadge)
+GET {{shell}}/remotes/orders/remoteEntry.js
+
+### La página del catálogo en modo independiente (sin el shell)
+GET {{shell}}/remotes/catalog/

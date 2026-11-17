@@ -1,0 +1,8 @@
+/* Estilos del equipo Catálogo, con prefijo propio (.catalog-) para no pisar los de otros equipos. */
+.catalog h1 { font-size: 1.3rem; margin: 0; }
+.catalog-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+.catalog-description { min-height: 2.6em; margin: 0 0 0.8rem; }
+.catalog-buy { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+.catalog-added { margin: 0 0 1rem; }
+.catalog-added a { color: var(--mi-accent); }
