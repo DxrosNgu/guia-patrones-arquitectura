@@ -189,6 +189,17 @@ Además, la reconstrucción de este lab **vacía** la vista mientras se rearma: 
 
 Para rebobinar el consumer group (experimento 5), Kafka exige que **no tenga miembros activos**. La primera versión del proyector no se iba del grupo al hacer `docker compose stop`: Python corre como **PID 1** en el contenedor, y el PID 1 **ignora `SIGTERM`** si no tiene un handler. Docker lo mataba a los 10 s con `SIGKILL`, el `finally` que cierra el consumidor nunca corría, y Kafka seguía viendo al proyector como miembro hasta que venciera el *session timeout*. El arreglo son 3 líneas en [`projector.py`](services/order-history/app/projector.py) (`add_signal_handler(SIGTERM, …)`): ahora `stop` tarda 0,6 s en lugar de 10, y el log dice `LeaveGroup request succeeded`. Vale para cualquier consumidor que corra como PID 1.
 
+Las otras formas de resolverlo, y por qué no alcanzan solas:
+
+| Opción | Qué logra | Qué no |
+|---|---|---|
+| **Manejar `SIGTERM` en el código** (lo que hace el lab) | El proceso se entera, cierra el consumidor y **sale del grupo**: Kafka reparte sus particiones al instante | Hay que acordarse en cada proceso propio. uvicorn, Quarkus y Spring ya lo hacen solos |
+| `init: true` en Compose (o `tini` como entrypoint) | Python deja de ser PID 1: `SIGTERM` ya no se ignora y `docker stop` no espera 10 s | Python muere **en el acto**, sin correr el `finally`: el consumidor tampoco sale del grupo y Kafka espera el *session timeout* igual |
+| `stop_grace_period` más largo | Más tiempo antes del `SIGKILL` | Si nadie escucha `SIGTERM`, solo se espera más |
+| Bajar `session.timeout.ms` | Kafka detecta antes a un consumidor muerto | Más rebalanceos falsos ante pausas cortas (una recolección de basura larga, la red) |
+
+Lo mismo pasa en Kubernetes: el pod recibe `SIGTERM`, y si el proceso no lo maneja, a los `terminationGracePeriodSeconds` (30 s por defecto) llega el `SIGKILL`.
+
 ## ¿Qué cambia en dev y prod?
 
 Este lab no trae overlays de ambiente. Lo que cambia:
@@ -207,7 +218,10 @@ Este lab no trae overlays de ambiente. Lo que cambia:
 - **Consistencia eventual.** Toda pantalla que lee después de escribir tiene que decidir qué hacer (las tres técnicas). Si el negocio no acepta ni un segundo de atraso en esa pantalla, CQRS de nivel 2 no sirve allí.
 - **Más piezas:** una base, un proceso, topics y un atraso que hay que monitorear.
 - **Datos duplicados.** El nombre del invento está en pedidos y en la vista. Si cambia, hay que decidir si la vista lo actualiza (otro evento) o muestra el nombre del momento de la compra (aquí, este último, y es lo correcto para un historial).
-- **⚠️ Escritura doble en `orders`.** Guarda en Postgres y **después** publica en Kafka. Si el proceso muere entre las dos, el pedido existe pero la vista nunca se entera. Es el problema que resuelve el [lab 15](../15-transactional-outbox/) (Transactional Outbox).
+- **⚠️ Escritura doble en `orders`.** Guarda en Postgres y **después** publica en Kafka ([`OrderResource`](services/orders/src/main/java/com/mercadoinventos/orders/OrderResource.java)). Si el proceso muere entre las dos, el pedido existe pero la vista **nunca** se entera: el historial no lo muestra jamás, y reconstruir la vista tampoco ayuda, porque el evento no está en Kafka. El lab lo deja así para tratar un solo patrón. La solución es el **Transactional Outbox** del [lab 15](../15-transactional-outbox/):
+  1. En la **misma transacción** que el pedido, insertar el evento `OrderPlaced` en una tabla `outbox` de la base de pedidos. O se guardan los dos, o ninguno.
+  2. Un proceso aparte lee la outbox y publica en Kafka: *polling* (consultar la tabla cada segundo) o CDC con Debezium (leer el WAL de Postgres).
+  3. Como ese proceso puede publicar dos veces, la proyección ya es idempotente (ignora un `eventId` repetido). Esa pieza de este lab ya está lista para el outbox.
 - **Cuándo no:** si un CRUD con un par de índices responde las consultas, o si los datos son de un solo servicio (usa el nivel 1, o una vista materializada de Postgres). CQRS es costo sin beneficio cuando las lecturas y las escrituras se parecen.
 
 ## Ejercicio

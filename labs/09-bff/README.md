@@ -120,6 +120,35 @@ Este lab no trae overlays de ambiente. Lo que cambia:
 | Fallas | Respuesta parcial | Lo mismo, más *circuit breaker* (lab 11) para no insistir con un servicio que ya está caído |
 | Observabilidad | — | Una traza muestra las llamadas en paralelo del BFF (lab 10) |
 
+### Cómo sería el login en prod
+
+En este lab el cliente llega como parámetro (`?customer=ana`) para no sumar Keycloak: no agrega nada al patrón de composición y hace el lab más pesado. En prod, el BFF suele ser **también** quien maneja el login de la web. Es el patrón *BFF como token handler*: el navegador nunca ve un token.
+
+```mermaid
+sequenceDiagram
+    participant W as Navegador
+    participant B as BFF web
+    participant K as Keycloak
+    participant O as orders
+    W->>B: GET /bff/my-orders (sin sesión)
+    B-->>W: 302 → Keycloak (Authorization Code + PKCE)
+    W->>K: usuario y contraseña
+    K-->>W: 302 → BFF con un "code"
+    W->>B: GET /bff/callback?code=...
+    B->>K: cambia el code por tokens (desde el servidor)
+    K-->>B: access token + refresh token
+    B-->>W: cookie de sesión (HttpOnly, Secure, SameSite)
+    W->>B: GET /bff/my-orders (con la cookie)
+    B->>O: GET /api/orders?customerId=ana<br/>Authorization: Bearer <access token>
+    O-->>B: los pedidos de ana
+    B-->>W: la pantalla compuesta
+```
+
+- **El cliente sale de la sesión**, no de la URL: el `preferred_username` (o el `sub`) del token. Pedir los pedidos de otro deja de ser posible.
+- **Los tokens viven en el servidor.** Una cookie `HttpOnly` no se puede leer desde JavaScript, así que un ataque XSS no puede robar el token.
+- **Cada servicio sigue validando el token** que le manda el BFF (como pedidos en el lab 07): defensa en profundidad.
+- El flujo con Keycloak, el gateway y una web de verdad se arma en el [lab 22](../22-integrador/).
+
 ## Costo y cuándo NO usarlo
 
 - **Un servicio más por cada interfaz**, con su despliegue y su equipo. Si hay 4 interfaces, hay 4 BFF.

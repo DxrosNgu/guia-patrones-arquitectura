@@ -127,7 +127,19 @@ Para limpiar: `docker compose --profile cdc down -v`.
 Este lab no trae overlays de ambiente. En prod:
 
 - **Limpieza de la outbox.** En polling, borrar periódicamente las filas publicadas hace tiempo. En CDC es común insertar y **borrar en la misma transacción**: Debezium captura el `INSERT` del WAL y la tabla queda siempre vacía.
-- **Debezium con usuario propio.** Aquí usa el superusuario `admin` por simplicidad (⚠️). En prod se usa un usuario con `REPLICATION` y permisos solo sobre la outbox.
+- **Debezium con usuario propio.** Aquí usa el superusuario `admin` por simplicidad (⚠️: funciona, pero no se copia así). Un superusuario puede leer y cambiar **todo**; si se filtra la contraseña del conector, se filtra la base entera. En prod, el conector entra con un usuario que solo puede replicar y leer la outbox:
+
+  ```sql
+  -- Una vez, como administrador:
+  CREATE ROLE debezium WITH LOGIN REPLICATION PASSWORD '<desde un secreto, nunca en el repo>';
+  GRANT CONNECT ON DATABASE orders TO debezium;
+  GRANT USAGE ON SCHEMA public TO debezium;
+  GRANT SELECT ON public.outbox TO debezium;
+  -- La publicación la crea el administrador: el usuario del conector no es dueño de la tabla.
+  CREATE PUBLICATION orders_outbox FOR TABLE public.outbox;
+  ```
+
+  Y en [`debezium/orders-outbox.json`](debezium/orders-outbox.json): `"database.user": "debezium"`, la contraseña desde un secreto, y `"publication.autocreate.mode": "disabled"` (la publicación ya existe). El lab no lo hace para no complicar `infra/postgres/init`, que comparten todos los labs.
 - **Vigilar el slot de replicación.** Si Debezium está caído mucho tiempo, Postgres **retiene el WAL** para él y el disco se llena. Hay que alertar por el tamaño del slot (`pg_replication_slots`).
 - **`wal_level=logical`** requiere reiniciar Postgres. En servicios administrados (RDS, Cloud SQL) se activa con un flag.
 - **Un conector por servicio dueño de su outbox** (Database per Service, lab 05).

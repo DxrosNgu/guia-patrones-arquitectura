@@ -30,9 +30,13 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
 
     app = FastAPI(title="BFF web", lifespan=lifespan)
 
+    # ⚠️ SOLO PARA EL LAB: el cliente llega como parámetro, y cualquiera puede pedir los pedidos de otro.
+    # En prod, el BFF maneja el login (Authorization Code + PKCE contra Keycloak), guarda los tokens del lado
+    # del servidor y le da al navegador solo una cookie de sesión (HttpOnly). Aquí el cliente saldría de esa
+    # sesión (el "sub" o "preferred_username" del token), y el BFF llamaría a los servicios con
+    # "Authorization: Bearer <token>". Ver el README, "Cómo sería el login en prod".
     @app.get("/bff/my-orders")
     async def my_orders_screen(customer: str, mode: Literal["parallel", "sequential"] = "parallel"):
-        # ⚠️ El cliente llega como parámetro para simplificar. En la vida real sale de la sesión o del token (lab 07).
         try:
             return await my_orders(state["services"], customer, mode)
         except OrdersUnavailable as error:
