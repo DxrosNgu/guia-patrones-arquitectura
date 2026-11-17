@@ -1,0 +1,28 @@
+### Lab 09 · BFF y API Composition
+
+### La pantalla "Mis pedidos", compuesta por el BFF (1 llamada)
+GET http://localhost:8110/bff/my-orders?customer=ana
+
+### Lo mismo, con las llamadas en cascada (para comparar tookMs)
+GET http://localhost:8110/bff/my-orders?customer=ana&mode=sequential
+
+### ── Lo que ve el BFF: las APIs de dominio, tal cual ──
+GET http://localhost:8102/api/orders?customerId=ana
+
+###
+GET http://localhost:8104/api/payments?orderIds=ord-1001,ord-1002,ord-1003
+
+###
+GET http://localhost:8105/api/shipments?orderIds=ord-1001,ord-1002,ord-1003
+
+### ── Caos: latencia en pagos y envíos ──
+PUT http://localhost:8104/admin/delay
+Content-Type: application/json
+
+{"ms": 500}
+
+###
+PUT http://localhost:8105/admin/delay
+Content-Type: application/json
+
+{"ms": 500}

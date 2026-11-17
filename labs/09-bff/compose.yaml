@@ -1,0 +1,45 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Lab 09 · Backend for Frontend y API Composition
+#
+#   navegador ──► frontend (nginx) ──/bff──► bff ──┬──► orders   (Quarkus)
+#                                                  ├──► payments (Quarkus)
+#                                                  └──► shipping (FastAPI)
+#
+#   docker compose up --build -d   → http://localhost:3000
+# ─────────────────────────────────────────────────────────────────────────
+name: lab09-bff
+
+services:
+  orders:
+    build: ./services/orders
+    image: mercado/lab09-orders:1.0.0
+
+  payments:
+    build: ./services/payments
+    image: mercado/lab09-payments:1.0.0
+
+  shipping:
+    build: ./services/shipping
+    image: mercado/lab09-shipping:1.0.0
+
+  bff:
+    build: ./services/bff
+    image: mercado/lab09-bff:1.0.0
+    environment:
+      ORDERS_URL: http://orders:8080
+      PAYMENTS_URL: http://payments:8080
+      SHIPPING_URL: http://shipping:8000
+      # Tiempo máximo por llamada: pasado esto, ese dato aparece como "no disponible".
+      CALL_TIMEOUT_S: ${CALL_TIMEOUT_S:-1.0}
+    # Sin depends_on de payments ni shipping, a propósito: el BFF arranca y responde
+    # (con datos parciales) aunque alguno no esté.
+    depends_on:
+      orders:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    image: mercado/lab09-frontend:1.0.0
+    depends_on:
+      bff:
+        condition: service_healthy

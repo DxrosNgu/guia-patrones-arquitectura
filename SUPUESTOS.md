@@ -125,6 +125,15 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 - **L08-5 🟢 Stork refresca cada 2 s** (el default es 5 minutos), para que los experimentos se vean en segundos.
 - **L08-6 🟢 Eureka solo se compara en el README**, sin implementarlo: Stork lo soporta con un cambio de configuración.
 
+### Lab 09 · BFF y API Composition
+
+- **L09-1 🟢 Los tres servicios son en memoria y sin base**, con datos de ejemplo para `ana` y `beto`. El lab es sobre componer, no sobre persistir.
+- **L09-2 🟢 Pagos y envíos aceptan varios pedidos por llamada** (`?orderIds=a,b,c`) para evitar el N+1. Es un cambio de API pensado para la composición, y el README lo explica.
+- **L09-3 🟡 El cliente llega como parámetro** (`?customer=ana`), sin login. Está marcado con ⚠️: en prod sale de la sesión o del token (lab 07). Juntar este lab con Keycloak lo volvía más pesado sin agregar nada al patrón.
+- **L09-4 🟢 La web tiene un modo "Sin BFF"** (el navegador compone con 3 peticiones), además de "BFF en paralelo" y "BFF en cascada". Para eso nginx también expone `/api/*`, solo en este lab.
+- **L09-5 🟢 La parte en Python usa `asyncio.gather` con `httpx`**, como decía el plan. El timeout es `asyncio.wait_for` por llamada, para que también funcione en los tests con `MockTransport`.
+- **L09-6 🟢 Pedidos es imprescindible (`503` si falla); pagos y envíos son opcionales** (respuesta parcial). La guía decía "respuesta parcial" en general; separé los dos casos porque sin pedidos no hay pantalla.
+
 ### Lab 10 · Observabilidad
 
 - **L10-1 🟡 Sin gateway ni frontend en la traza.** **Pediste más detalle.** Hoy la traza **empieza en `orders`**: el primer span es `POST /api/orders`, porque la petición la hace `curl` o `requests.http` directamente. El plan original decía "de React al gateway, a pedidos, a Kafka, a inventario", pero el gateway (lab 07) y el frontend de ese flujo todavía no existen.
