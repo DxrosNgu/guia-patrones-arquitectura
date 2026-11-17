@@ -1,0 +1,6 @@
+# Ambiente LOCAL (Compose lo carga solo).
+services:
+  catalog-1:
+    ports: ["8101:8080"]
+  catalog-2:
+    ports: ["8111:8080"]

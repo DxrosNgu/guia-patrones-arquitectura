@@ -165,6 +165,15 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
 - **L12-2 🟢 Concurrencia resuelta con la `PRIMARY KEY` + `INSERT … ON CONFLICT DO NOTHING`**, sin locks explícitos ni Redis. Es lo más simple que funciona con Postgres.
 - **L12-3 🟢 Caos "muere antes del commit"** con un archivo marcador, para que se caiga **una sola** vez y no entre en un bucle de reinicios.
 
+### Lab 13 · Cache-Aside
+
+- **L13-1 🟢 La consulta "cara" se simula con `pg_sleep`** (200 ms, `DB_DELAY_MS`). Sin eso, Postgres responde en 1 ms y la caché no muestra su valor.
+- **L13-2 🟢 Dos servicios `catalog-1` y `catalog-2`** (la misma imagen) en lugar de `--scale`, para tener puertos fijos (8101 y 8111) y poder leer de cada instancia.
+- **L13-3 🟢 Las cachés están escritas a mano** (un mapa con TTL y Redis con `SET … EX`), en lugar de `@CacheResult` de Quarkus. Así se ve cada paso del cache-aside. El README nombra la alternativa.
+- **L13-4 🟢 El stampede se mitiga con un candado en Redis** (`SET NX PX`), que funciona entre instancias. *Refresh-ahead*, *stale-while-revalidate* y TTL con jitter solo se explican.
+- **L13-5 🟢 La protección contra el stampede se cambia en caliente** (`PUT /admin/stampede-protection`), sin reiniciar, para comparar con y sin.
+- **L13-6 🟡 Sin caché negativa** (los SKU que no existen no se cachean). Está marcado con ⚠️ y es el ejercicio.
+
 ### Lab 15 · Transactional Outbox
 
 - **L15-1 🟢 Un solo servicio con tres modos** (`OUTBOX_MODE=naive|polling|cdc`) para comparar dual write, polling y CDC con el mismo código de negocio.

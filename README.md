@@ -332,7 +332,7 @@ flowchart TD
 | [10](labs/10-observabilidad/) | Health Check API · Distributed Tracing · Log Aggregation · Metrics | No se ve dónde falla una petición distribuida | Seguir un pedido de orders a inventory pasando por Kafka | Quarkus · FastAPI | Grafana LGTM · Kafka | ✅ |
 | [11](labs/11-resiliencia/) | Timeout · Retry · Circuit Breaker · Bulkhead · Fallback | Fallas en cascada por una dependencia lenta | Pasarela de pagos externa inestable | Quarkus · FastAPI | Grafana LGTM | ✅ |
 | [12](labs/12-idempotencia/) | Idempotency Key · Idempotent Consumer | Reintentos que cobran dos veces | Doble clic en "Pagar" y mensajes duplicados | Quarkus · FastAPI | Kafka | ✅ |
-| 13 | Cache-Aside | BD saturada por lecturas | Catálogo muy consultado | Quarkus | Redis | 🗓️ |
+| [13](labs/13-cache-aside/) | Cache-Aside | BD saturada por lecturas | Catálogo muy consultado | Quarkus | Redis | ✅ |
 | 14 | CQRS | El modelo de escritura no sirve para consultar | Historial de pedidos con datos de 3 servicios | Quarkus · FastAPI · React | Kafka · MongoDB | 🗓️ |
 | [15](labs/15-transactional-outbox/) | Transactional Outbox · Polling Publisher · Log Tailing | Guardar y publicar no es atómico | Pedido creado sin su evento | Quarkus | Kafka · Debezium | ✅ |
 | [16](labs/16-saga-coreografia/) | Saga (coreografía) | Una transacción de negocio entre 4 BD | Flujo de compra completo con compensaciones | Quarkus · FastAPI · React | Kafka | ✅ |
@@ -540,6 +540,8 @@ PostgreSQL está en todos los labs, así que no figura en la columna *Infra extr
 ### Módulo 5 · Datos y consistencia distribuida
 
 #### 13 · Cache-Aside
+
+✅ [Ir al lab](labs/13-cache-aside/)
 
 - **Patrones:** Cache-Aside · TTL e invalidación · Protección contra *cache stampede*.
 - **Problema:** el catálogo se lee miles de veces más de lo que se escribe, y la BD se satura.
