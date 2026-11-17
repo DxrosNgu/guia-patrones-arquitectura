@@ -4,8 +4,7 @@
 services:
   gateway:
     ports: ["8080:8080"]
-  keycloak:
-    ports: ["8180:8080"]
+  # keycloak publica el 8180 desde infra/keycloak.yaml
   catalog:
     ports: ["8101:8080"]
   orders:
