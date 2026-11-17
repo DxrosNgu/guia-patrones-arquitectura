@@ -19,7 +19,7 @@ public class InventionReader {
 
     private static final Logger LOG = Logger.getLogger(InventionReader.class);
 
-    public enum Mode { NONE, LOCAL, REDIS }
+    public enum Mode { NONE, LOCAL, REDIS, ANNOTATED }
 
     public record Read(Optional<Invention> invention, String cache) {
     }
@@ -32,6 +32,9 @@ public class InventionReader {
 
     @Inject
     RedisCache redis;
+
+    @Inject
+    AnnotatedCache annotated;
 
     // Ojo: el estado se lee y escribe con MÉTODOS. Este bean se inyecta como un proxy de CDI,
     // y leer un campo a través del proxy devuelve el del proxy, no el del bean real.
@@ -46,7 +49,15 @@ public class InventionReader {
             case NONE -> new Read(db.find(sku), "BYPASS");
             case LOCAL -> aside(sku, local::get, local::put, () -> db.find(sku));
             case REDIS -> readThroughRedis(sku);
+            case ANNOTATED -> readAnnotated(sku);
         };
+    }
+
+    /** Con @CacheResult no hay un "if": para contar HIT o MISS se mira si la base recibió una consulta. */
+    private Read readAnnotated(String sku) {
+        int before = db.queries();
+        Optional<Invention> invention = annotated.find(sku);
+        return new Read(invention, db.queries() == before ? "HIT" : "MISS");
     }
 
     private Read aside(String sku, java.util.function.Function<String, Optional<Invention>> cacheGet,
@@ -97,6 +108,7 @@ public class InventionReader {
             // ⚠️ Solo borra la caché local de ESTA instancia. Las otras instancias siguen con el viejo.
             local.invalidate(sku);
             redis.invalidate(sku);
+            annotated.invalidate(sku);
         }
         return updated;
     }
@@ -104,6 +116,7 @@ public class InventionReader {
     public void evict(String sku) {
         local.invalidate(sku);
         redis.invalidate(sku);
+        annotated.invalidate(sku);
     }
 
     public boolean stampedeProtection() {
@@ -118,6 +131,7 @@ public class InventionReader {
         db.resetQueries();
         local.clear();
         redis.clear();
+        annotated.clear();
     }
 
     private static void sleep(long ms) {

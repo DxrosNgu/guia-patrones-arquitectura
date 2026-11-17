@@ -13,6 +13,7 @@ name: lab07-api-gateway
 
 include:
   - ../../infra/redis.yaml
+  - ../../infra/keycloak.yaml   # keycloak (http://localhost:8180) con el realm "mercado"
 
 x-oidc: &oidc
   # Cómo llega este contenedor a Keycloak (red interna)...
@@ -21,28 +22,6 @@ x-oidc: &oidc
   OIDC_ISSUER: http://localhost:8180/realms/mercado
 
 services:
-  keycloak:
-    image: keycloak/keycloak:26.8.2
-    command: ["start-dev", "--import-realm"]
-    environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
-      KC_HTTP_PORT: "8080"
-      # Los tokens SIEMPRE salen con iss=http://localhost:8180/realms/mercado, aunque se pidan
-      # por la red interna. Así gateway y servicios validan contra un único emisor.
-      KC_HOSTNAME: http://localhost:8180
-      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
-      KC_HEALTH_ENABLED: "true"
-    volumes:
-      - ./keycloak/mercado-realm.json:/opt/keycloak/data/import/mercado-realm.json:ro
-    healthcheck:
-      # La imagen no trae curl: se habla HTTP "a mano" con /dev/tcp de bash.
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
-      interval: 5s
-      timeout: 5s
-      retries: 40
-      start_period: 20s
-
   catalog:
     build: ./services/catalog
     image: mercado/lab07-catalog:1.0.0

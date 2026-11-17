@@ -48,7 +48,66 @@ Una clave muy pedida vence. En ese instante llegan 20 lecturas, las 20 encuentra
 
 La mitigación de este lab es un **candado en Redis** (`SET lock NX PX 2000`): solo la petición que lo consigue va a la base; las demás esperan unos milisegundos a que la caché se llene (`X-Cache: HIT-AFTER-WAIT`). Como el candado está en Redis, funciona **entre instancias**: 20 lecturas repartidas en `catalog-1` y `catalog-2` hacen **1** consulta.
 
+#### El candado, paso a paso
+
+El código está en [`InventionReader.readThroughRedis`](services/catalog/src/main/java/com/mercadoinventos/catalog/InventionReader.java) y [`RedisCache.tryLock`](services/catalog/src/main/java/com/mercadoinventos/catalog/RedisCache.java). Con dos lecturas que llegan a la vez y encuentran la clave vacía:
+
+```mermaid
+sequenceDiagram
+    participant A as Lectura A (catalog-1)
+    participant R as Redis
+    participant DB as Base
+    participant B as Lectura B (catalog-2)
+    A->>R: GET invention:INV-001 → (vacío)
+    B->>R: GET invention:INV-001 → (vacío)
+    A->>R: SET lock:invention:INV-001 1 NX PX 2000 → OK
+    B->>R: SET lock:invention:INV-001 1 NX PX 2000 → nil (ya existe)
+    A->>DB: la consulta cara (200 ms)
+    loop cada 50 ms, hasta 2 s
+        B->>R: GET invention:INV-001
+    end
+    A->>R: SET invention:INV-001 {...} EX 30
+    A->>R: DEL lock:invention:INV-001
+    B->>R: GET invention:INV-001 → ✔ (HIT-AFTER-WAIT)
+```
+
+- **`NX`** (*only if Not eXists*): de todas las peticiones que intentan crear el candado a la vez, **una sola** lo consigue. Redis ejecuta los comandos de a uno, así que no hay empate posible.
+- **`PX 2000`**: el candado se borra solo a los 2 s. Si la instancia que lo tenía muere a mitad de camino, nadie queda esperando para siempre.
+- **Los que no lo consiguen esperan** a que aparezca el valor (cada 50 ms, hasta 2 s). Si no aparece, van a la base igual: mejor una consulta de más que una respuesta que no llega.
+- **Está en Redis, no en la memoria del proceso**: por eso protege también entre `catalog-1` y `catalog-2`.
+
+⚠️ Un detalle que el lab simplifica: `DEL` borra el candado **sea de quien sea**. Si la consulta tardara más de 2 s, el candado de A vencería, B tomaría uno nuevo, y el `DEL` de A borraría **el de B**. La versión robusta guarda un valor único por petición (`SET lock <uuid> NX PX 2000`) y borra solo si sigue siendo el suyo, con un script Lua que compara y borra en un paso. Es el patrón que describe la documentación de Redis en *Distributed Locks with Redis*.
+
+Para profundizar en el proyecto: el test `stampedeProtectionLetsOnlyOneRequestRebuildAnExpiredKey` en [`CacheAsideTest`](services/catalog/src/test/java/com/mercadoinventos/catalog/CacheAsideTest.java), el experimento 4 de "Rómpelo" y, en los logs, `Nadie llenó la caché de ... en 2 s` cuando la espera se agota.
+
 Otras mitigaciones, sin implementar aquí: renovar la entrada **antes** de que venza (*refresh-ahead*), devolver el valor viejo mientras uno lo recalcula (*stale-while-revalidate*) o variar un poco el TTL de cada clave (*jitter*) para que no venzan todas juntas.
+
+### ¿Y `@CacheResult`?
+
+Quarkus trae una caché con anotaciones (`quarkus-cache`). El lab escribe la caché a mano para que se vea cada paso, pero también la tiene declarada con anotaciones, como cuarto modo (`?cache=annotated`, en [`AnnotatedCache.java`](services/catalog/src/main/java/com/mercadoinventos/catalog/AnnotatedCache.java)):
+
+```java
+@CacheResult(cacheName = "inventions")
+public Optional<Invention> find(String sku) {
+    return db.find(sku);          // solo se ejecuta en un MISS
+}
+
+@CacheInvalidate(cacheName = "inventions")
+public void invalidate(String sku) { }
+```
+
+Es la misma caché local de `?cache=local`, en tres anotaciones y una línea de configuración (`quarkus.cache.caffeine.inventions.expire-after-write`). Lo que hace sin que se vea, comprobado en los tests y con k6:
+
+| | A mano (`local`) | `@CacheResult` (`annotated`) |
+|---|---|---|
+| Código | ~50 líneas (`LocalCache` + el "si no está, leer y guardar") | 3 anotaciones |
+| 20 lecturas a la vez de una clave vencida | Varias van a la base | **1** va a la base: las demás esperan su resultado (candado por clave incluido) |
+| Ese candado, entre `catalog-1` y `catalog-2` | — | **No**: es de cada instancia. 20 lecturas repartidas entre las dos hicieron 2 consultas, una por instancia |
+| Lo que no existe (`NOPE`) | No se cachea | **Se cachea**: el `Optional.empty()` es un valor más. Caché negativa sin pedirla, con el mismo TTL |
+| Ver si fue HIT o MISS | Directo, en el código | No se ve: el lab lo deduce contando las consultas a la base |
+| Invalidar en otras instancias | No | Tampoco. Con la extensión `quarkus-redis-cache`, las **mismas** anotaciones guardan en Redis |
+
+**Cuándo usar cuál:** las anotaciones alcanzan para la mayoría de los casos y son menos código que mantener. Escribirla a mano paga cuando necesitas lo que las anotaciones no muestran: el candado **entre** instancias, métricas de HIT y MISS, o estrategias como *stale-while-revalidate*.
 
 ## Arquitectura del lab
 
@@ -61,7 +120,7 @@ Otras mitigaciones, sin implementar aquí: renovar la entrada **antes** de que v
 
 | Endpoint | Qué hace |
 |---|---|
-| `GET /api/inventions/{sku}?cache=none\|local\|redis` | Leer. Las cabeceras `X-Cache` (`BYPASS`, `HIT`, `MISS`, `HIT-AFTER-WAIT`) y `X-Instance` dicen qué pasó y quién respondió |
+| `GET /api/inventions/{sku}?cache=none\|local\|redis\|annotated` | Leer. Las cabeceras `X-Cache` (`BYPASS`, `HIT`, `MISS`, `HIT-AFTER-WAIT`) y `X-Instance` dicen qué pasó y quién respondió |
 | `PUT /api/inventions/{sku}/price` | Escribir: actualiza la base e invalida las cachés (la local, solo la de esta instancia) |
 | `GET /api/stats` | Cuántas consultas recibió la base desde esta instancia |
 | `DELETE /admin/cache/{sku}` | Simula que la clave venció |
@@ -99,8 +158,9 @@ Más peticiones en [`requests.http`](requests.http). Para limpiar: `docker compo
    | `none` | 204 ms | 1501 |
    | `redis` | 1,5 ms | 4 (una por invento) |
    | `local` | 0,7 ms | 13 |
+   | `annotated` | 0,8 ms | 4 |
 
-   Con caché, la base pasa de 1500 consultas a un puñado. La local es la más rápida (no hay red), pero hizo 13 consultas y no 4: no tiene candado contra el stampede, así que al empezar, varias lecturas del mismo invento fallaron a la vez y fueron todas a la base.
+   Con caché, la base pasa de 1500 consultas a un puñado. La local es la más rápida (no hay red), pero hizo 13 consultas y no 4: no tiene candado contra el stampede, así que al empezar, varias lecturas del mismo invento fallaron a la vez y fueron todas a la base. `@CacheResult` es igual de rápida y hizo 4: trae su propio candado por clave (ver "¿Y `@CacheResult`?").
 
 3. **El dato viejo, con la caché local.** Lee INV-002 con `?cache=local` en las **dos** instancias. Cambia el precio por `catalog-1`:
    ```bash

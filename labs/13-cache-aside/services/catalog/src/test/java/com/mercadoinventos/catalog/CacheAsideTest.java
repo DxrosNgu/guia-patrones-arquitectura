@@ -73,6 +73,30 @@ class CacheAsideTest {
     }
 
     @Test
+    void cacheResultDoesTheSameCacheAsideWithAnnotations() {
+        read("annotated", "INV-002").then().statusCode(200).header("X-Cache", "MISS");
+        read("annotated", "INV-002").then().statusCode(200).header("X-Cache", "HIT");
+        given().contentType(ContentType.JSON).body("{\"price\":79.00}").put("/api/inventions/INV-002/price").then().statusCode(200);
+
+        read("annotated", "INV-002").then().header("X-Cache", "MISS").body("price", org.hamcrest.Matchers.equalTo(79.0f));
+
+        given().contentType(ContentType.JSON).body("{\"price\":89.00}").put("/api/inventions/INV-002/price").then().statusCode(200);
+    }
+
+    @Test
+    void cacheResultLetsOnlyOneOfManyConcurrentCallsReachTheDatabase() throws Exception {
+        assertThat(concurrentReads("annotated", "INV-003")).isEqualTo(1);
+    }
+
+    @Test
+    void cacheResultAlsoCachesWhatDoesNotExist() {
+        read("annotated", "NOPE").then().statusCode(404);
+        read("annotated", "NOPE").then().statusCode(404);
+
+        assertThat(dbQueries()).isEqualTo(1);   // Optional.empty() también quedó en la caché
+    }
+
+    @Test
     void unknownSkuIs404() {
         read("redis", "NOPE").then().statusCode(404);
     }
@@ -90,10 +114,14 @@ class CacheAsideTest {
     private int concurrentMisses(boolean protection) throws Exception {
         given().contentType(ContentType.JSON).body("{\"enabled\":" + protection + "}").put("/admin/stampede-protection")
             .then().statusCode(200);
+        return concurrentReads("redis", "INV-001");
+    }
+
+    private int concurrentReads(String mode, String sku) throws Exception {
         ExecutorService pool = Executors.newFixedThreadPool(20);
         List<Future<Integer>> futures = new ArrayList<>();
         for (int i = 0; i < 20; i++) {
-            futures.add(pool.submit((Callable<Integer>) () -> read("redis", "INV-001").statusCode()));
+            futures.add(pool.submit((Callable<Integer>) () -> read(mode, sku).statusCode()));
         }
         for (Future<Integer> f : futures) {
             assertThat(f.get()).isEqualTo(200);

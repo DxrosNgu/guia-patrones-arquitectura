@@ -3,6 +3,8 @@
 #
 #   docker compose up --build -d
 #   Grafana: http://localhost:3001  (Explore → Tempo / Loki / Prometheus)
+#
+#   cliente ─▶ gateway :8080 ─▶ orders ─▶ Kafka ─▶ inventory      (una sola traza, de punta a punta)
 # ─────────────────────────────────────────────────────────────────────────
 name: lab10-observabilidad
 
@@ -55,3 +57,20 @@ services:
         condition: service_healthy
       kafka-init:
         condition: service_completed_successfully
+
+  # La puerta de entrada: aquí EMPIEZA la traza. Spring Cloud Gateway sin código de observabilidad:
+  # el agente de OpenTelemetry para Java (-javaagent, ver gateway/Dockerfile) lo instrumenta todo.
+  gateway:
+    build: ./gateway
+    image: mercado/lab10-gateway:1.0.0
+    environment:
+      ORDERS_URL: http://orders:8080
+      INVENTORY_URL: http://inventory:8000
+      OTEL_SERVICE_NAME: gateway
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318   # el agente usa OTLP/HTTP por defecto
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
+      # Experimento: OTEL_JAVAAGENT_ENABLED=false apaga el agente y el gateway desaparece de la traza.
+      OTEL_JAVAAGENT_ENABLED: ${OTEL_JAVAAGENT_ENABLED:-true}
+    depends_on:
+      orders:
+        condition: service_healthy

@@ -1,5 +1,5 @@
 // Lecturas del catálogo: 50 por segundo durante 30 s, sobre 4 inventos (unos pocos muy pedidos,
-// como un catálogo real). Compara CACHE=none con CACHE=redis o CACHE=local.
+// como un catálogo real). Compara CACHE=none con CACHE=redis, CACHE=local o CACHE=annotated (@CacheResult).
 import http from 'k6/http'
 import { check } from 'k6'
 

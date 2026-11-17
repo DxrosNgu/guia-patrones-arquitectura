@@ -51,6 +51,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-flyway-postgresql</artifactId>
         </dependency>
+        <!-- La caché local con anotaciones (@CacheResult), para comparar con la escrita a mano -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-cache</artifactId>
+        </dependency>
         <!-- La caché distribuida -->
         <dependency>
             <groupId>io.quarkus</groupId>

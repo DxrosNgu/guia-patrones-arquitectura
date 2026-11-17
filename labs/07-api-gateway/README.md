@@ -81,12 +81,12 @@ Lo que se aprende aquí (rutas, autenticación en el borde, límites por usuario
 | Servicio | Qué es | Puerto |
 |---|---|---|
 | `gateway` | Spring Cloud Gateway: el único punto de entrada | 8080 |
-| `keycloak` | Servidor de identidad: emite y firma los tokens. Admin: `admin` / `admin` | 8180 |
+| `keycloak` | Servidor de identidad: emite y firma los tokens. Admin: `admin` / `admin`. Viene de [`infra/keycloak.yaml`](../../infra/keycloak.yaml) | 8180 |
 | `catalog` | Quarkus, público, solo lectura | 8101 (expuesto solo para experimentar) |
 | `orders` | Quarkus, valida el token otra vez | 8102 (expuesto solo para experimentar) |
 | `redis` | Contadores del rate limiting | 6379 |
 
-Usuarios del realm `mercado` (contraseña = nombre de usuario):
+Usuarios del realm `mercado` ([`infra/keycloak/mercado-realm.json`](../../infra/keycloak/mercado-realm.json); contraseña = nombre de usuario):
 
 | Usuario | Rol `buyer` | Para qué |
 |---|---|---|
@@ -148,7 +148,7 @@ Más peticiones en [`requests.http`](requests.http). Las rutas activas: http://l
    curl -s localhost:8080/api/orders -H "Authorization: Bearer $(./token.sh ana)"   # sigue funcionando
    docker compose start catalog
    ```
-   El gateway responde `500` para el catálogo, sin explicar mucho, y el resto de las rutas sigue funcionando. Responder un `503` claro o un *fallback* (por ejemplo, un catálogo en caché) es trabajo del **circuit breaker**, en el lab 11.
+   El gateway responde `500` para el catálogo, sin explicar mucho, y el resto de las rutas sigue funcionando. Responder un `503` claro o un *fallback* (por ejemplo, un catálogo en caché) es trabajo del **circuit breaker**. Se ve en profundidad en el [lab 11](../11-resiliencia/): timeout, retry, circuit breaker, bulkhead y fallback, con una pasarela de pagos que falla a propósito y una prueba de carga. En este gateway sería el filtro `CircuitBreaker` de Spring Cloud Gateway (con Resilience4j) y una ruta `fallbackUri`.
 
 ## ¿Qué cambia en dev y prod?
 

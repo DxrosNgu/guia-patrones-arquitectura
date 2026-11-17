@@ -9,11 +9,13 @@ lgtm() { docker compose exec -T lgtm curl -s "$@"; }
 
 for _ in $(seq 1 90); do
   curl -fsS -o /dev/null http://localhost:8103/health/ready 2>/dev/null \
-    && curl -fsS -o /dev/null http://localhost:8102/q/health/ready 2>/dev/null && break
+    && curl -fsS -o /dev/null http://localhost:8102/q/health/ready 2>/dev/null \
+    && curl -fsS -o /dev/null http://localhost:8080/actuator/health 2>/dev/null && break
   sleep 2
 done
 
-headers=$(curl -sS -D - -o /dev/null -X POST http://localhost:8102/api/orders -H 'Content-Type: application/json' \
+# El pedido entra por el GATEWAY, como lo haría un cliente real.
+headers=$(curl -sS -D - -o /dev/null -X POST http://localhost:8080/api/orders -H 'Content-Type: application/json' \
   -d '{"customerId":"ana","items":[{"sku":"INV-001","quantity":1}]}')
 grep -q "202" <<<"$headers" || fail "el pedido no fue aceptado: $headers"
 TRACE=$(grep -i '^x-trace-id' <<<"$headers" | awk '{print $2}' | tr -d '\r')
@@ -27,10 +29,11 @@ for _ in $(seq 1 20); do
   grep -q '"stringValue":"inventory"' <<<"$trace" && grep -q 'orders.events process' <<<"$trace" && break
   sleep 3
 done
+grep -q '"stringValue":"gateway"' <<<"$trace"   || fail "la traza no tiene spans del gateway"
 grep -q '"stringValue":"orders"' <<<"$trace"    || fail "la traza no tiene spans de orders"
 grep -q '"stringValue":"inventory"' <<<"$trace" || fail "la traza no tiene spans de inventory"
 grep -q 'orders.events process' <<<"$trace"     || fail "falta el span del consumidor de Kafka"
-ok "Tempo: una sola traza cruza orders (Quarkus) → Kafka → inventory (Python)"
+ok "Tempo: una sola traza cruza gateway (Spring + agente OTel) → orders (Quarkus) → Kafka → inventory (Python)"
 grep -q 'orders.check-stock' <<<"$trace" && grep -q 'orders.save-and-publish' <<<"$trace" \
   || fail "faltan los spans hechos a mano (orders.check-stock con @WithSpan, orders.save-and-publish con Tracer)"
 ok "Tempo: los spans manuales de Quarkus (@WithSpan y Tracer) están en la misma traza"
