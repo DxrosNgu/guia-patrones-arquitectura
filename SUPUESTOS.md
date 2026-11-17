@@ -149,6 +149,16 @@ Este archivo reúne las decisiones que tomé **sin poder consultarte** mientras 
   Hay tests con un exportador en memoria, chequeos en `smoke.sh` y una captura nueva. La comparativa está en [`docs/instrumentacion-manual-vs-automatica.md`](labs/10-observabilidad/docs/instrumentacion-manual-vs-automatica.md): Python a mano, Python con `opentelemetry-instrument`, Quarkus, y una tabla de Spring Boot. También bajé la exportación de métricas de Quarkus de 60 s a 10 s.
 - **L10-4 ✅ SQLAlchemy 2.0.57 en este lab.** **Respuesta:** dejarlo como actualización futura. Ya está en [`docs/actualizaciones-futuras.md`](docs/actualizaciones-futuras.md).
 
+### Lab 11 · Resiliencia
+
+- **L11-1 🟢 La pasarela simulada (`payment-provider`, puerto 8122) es FastAPI**, con controles de caos (latencia, tasa de errores, caída total), idempotencia por clave y un contador de peticiones recibidas para medir el *retry storm*.
+- **L11-2 🟢 Tres caminos en pagos:** `/naive` (sin protección), `/naive-retry` (reintentos inmediatos) y el resiliente. Así se comparan con la misma pasarela.
+- **L11-3 🟢 El fallback deja el pago `PENDING_CONFIRMATION`** (`202`) y un reconciliador (`@Scheduled` cada 5 s) lo confirma después, con la misma `idempotencyKey`. El plan decía "para reintentarlo después"; el reconciliador es ese "después".
+- **L11-4 🟢 El circuit breaker ignora los rechazos de negocio (`402`) y los del bulkhead.** Lo segundo apareció con la carga de k6: con la JVM fría, el bulkhead rechazaba llamadas, eso contaba como falla y el circuito se abría sin que la pasarela fallara. Está contado en el README.
+- **L11-5 🟡 En Python, solo Retry con tenacity**, como decía el plan. tenacity no tiene circuit breaker ni bulkhead; el README nombra las alternativas (`pybreaker`, `asyncio.Semaphore`) sin implementarlas.
+- **L11-6 🟢 Las métricas son propias** (`payments_circuit_state`, `payments_outcomes_total`, `payments_provider_calls_total`) con el `Meter` de OpenTelemetry, en lugar de las métricas internas de SmallRye Fault Tolerance, porque así se leen directo en Prometheus. Sin un dashboard provisionado: el README da las consultas para Explore, y el gráfico del README sale de esos mismos datos.
+- **L11-7 🟢 k6 2.4.0 en un perfil `load`**, sin `latest`. El experimento de la caída de la pasarela se hace a mano (el README da los comandos).
+
 ### Lab 12 · Idempotencia
 
 - **L12-1 🟢 No hay servicio de pedidos:** los eventos se publican con `publish-event.sh`. Así el lector controla exactamente cuándo se repite un evento.

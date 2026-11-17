@@ -1,0 +1,66 @@
+### Lab 11 · Resiliencia
+@pay = http://localhost:8104
+@provider = http://localhost:8122
+
+### ✅ Pago con los cinco patrones
+POST {{pay}}/api/payments
+Content-Type: application/json
+
+{"orderId": "pedido-1", "amount": 25}
+
+### ❌ Sin protección (espera lo que tarde la pasarela)
+POST {{pay}}/api/payments/naive
+Content-Type: application/json
+
+{"orderId": "pedido-2", "amount": 25}
+
+### ❌ Reintentos inmediatos (retry storm)
+POST {{pay}}/api/payments/naive-retry
+Content-Type: application/json
+
+{"orderId": "pedido-3", "amount": 25}
+
+### Rechazo de negocio → 402, sin reintentos
+POST {{pay}}/api/payments
+Content-Type: application/json
+
+{"orderId": "pedido-4", "amount": 5000}
+
+### Estado de un pago (PENDING_CONFIRMATION → APPROVED cuando el reconciliador lo confirma)
+GET {{pay}}/api/payments/pedido-1
+
+### Estado del circuito y pagos pendientes
+GET {{pay}}/api/resilience
+
+### ── Caos en la pasarela ──
+PUT {{provider}}/admin/chaos
+Content-Type: application/json
+
+{"latencyMs": 3000}
+
+###
+PUT {{provider}}/admin/chaos
+Content-Type: application/json
+
+{"down": true}
+
+###
+PUT {{provider}}/admin/chaos
+Content-Type: application/json
+
+{"errorRate": 0.5}
+
+### Normalidad
+PUT {{provider}}/admin/chaos
+Content-Type: application/json
+
+{}
+
+### Cuántas peticiones recibió la pasarela
+GET {{provider}}/admin/stats
+
+### Checkout (Python + tenacity)
+POST http://localhost:8110/api/checkout
+Content-Type: application/json
+
+{"orderId": "pedido-5", "amount": 10}

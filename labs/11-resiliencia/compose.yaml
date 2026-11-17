@@ -1,0 +1,60 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Lab 11 · Resiliencia
+#
+#   checkout (Python + tenacity) ──► payments (Quarkus + SmallRye Fault Tolerance) ──► payment-provider
+#                                                                                       (pasarela EXTERNA simulada,
+#                                                                                        con controles de caos)
+#   docker compose up --build -d
+#   docker compose --profile load run --rm k6       → carga con k6 (mira el circuito en Grafana)
+# ─────────────────────────────────────────────────────────────────────────
+name: lab11-resiliencia
+
+include:
+  - ../../infra/observability.yaml     # Grafana LGTM: http://localhost:3001
+
+services:
+  payment-provider:
+    build: ./services/payment-provider
+    image: mercado/lab11-payment-provider:1.0.0
+
+  payments:
+    build: ./services/payments
+    image: mercado/lab11-payments:1.0.0
+    environment:
+      PROVIDER_URL: http://payment-provider:8000
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4317
+      # Cuánto queda abierto el circuito antes de probar de nuevo (semiabierto).
+      CIRCUIT_OPEN_MS: ${CIRCUIT_OPEN_MS:-5000}
+      RECONCILE_EVERY: ${RECONCILE_EVERY:-5s}
+    depends_on:
+      payment-provider:
+        condition: service_healthy
+      lgtm:
+        condition: service_healthy
+
+  checkout:
+    build: ./services/checkout
+    image: mercado/lab11-checkout:1.0.0
+    environment:
+      PAYMENTS_URL: http://payments:8080
+      RETRY_ATTEMPTS: ${RETRY_ATTEMPTS:-3}
+    depends_on:
+      payments:
+        condition: service_healthy
+
+  # Carga con k6 (perfil "load"): docker compose --profile load run --rm k6
+  # Cambia el camino con TARGET=naive o TARGET=naive-retry para comparar.
+  k6:
+    profiles: [load]
+    image: grafana/k6:2.4.0
+    volumes:
+      - ./load:/scripts:ro
+    environment:
+      BASE_URL: http://payments:8080
+      TARGET: ${TARGET:-}
+      RATE: ${RATE:-20}
+      DURATION: ${DURATION:-60s}
+    command: ["run", "/scripts/payments.js"]
+    depends_on:
+      payments:
+        condition: service_healthy

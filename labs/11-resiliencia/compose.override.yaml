@@ -1,0 +1,8 @@
+# Ambiente LOCAL (Compose lo carga solo).
+services:
+  payment-provider:
+    ports: ["8122:8000"]
+  payments:
+    ports: ["8104:8080"]
+  checkout:
+    ports: ["8110:8000"]
